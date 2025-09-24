@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -15,15 +16,25 @@ public class TelaInicial {
     private Skin skin;
     private Texture background;
     private Runnable jogarCallback;
+    private Runnable regrasCallback;
+    private Runnable configCallback;
 
-    public TelaInicial(Runnable jogarCallback) {
+    public TelaInicial(Runnable jogarCallback, Runnable regrasCallback, Runnable configCallback) {
         this.jogarCallback = jogarCallback;
+        this.regrasCallback = regrasCallback;
+        this.configCallback = configCallback;
+
         stage = new Stage(new FitViewport(1280, 720));
         Gdx.input.setInputProcessor(stage);
 
         // Carrega skin e fundo
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         background = new Texture(Gdx.files.internal("TelaInicialBackground.png")); // coloque em assets/
+
+        Texture tituloTexture = new Texture(Gdx.files.internal("logo.png")); // coloque em assets/
+        Image tituloImage = new Image(tituloTexture);
+
+        tituloImage.setPosition(130, 460);
 
         //aumentar a fonte
         BitmapFont fontGrande = new BitmapFont(); // fonte padrão
@@ -71,7 +82,14 @@ public class TelaInicial {
         btnConfigurar.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                System.out.println("Configurar clicado!");
+                if (configCallback != null) configCallback.run();
+            }
+        });
+
+        btnRegras.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if (regrasCallback != null) regrasCallback.run();
             }
         });
 
@@ -83,6 +101,7 @@ public class TelaInicial {
         });
 
         // Adiciona ao stage
+        stage.addActor(tituloImage);
         stage.addActor(btnJogar);
         stage.addActor(btnConfigurar);
         stage.addActor(btnRegras);

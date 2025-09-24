@@ -6,8 +6,11 @@ import com.badlogic.gdx.Gdx;
 public class Main extends ApplicationAdapter {
     private TelaInicial telaInicial;
     private TelaDeJogo telaDeJogo;
+    private TelaDeRegras telaDeRegras;
+    private TelaDeConfig telaDeConfig;
 
-    private enum TelaAtiva { INICIAL, JOGO }
+
+    private enum TelaAtiva { INICIAL, JOGO, REGRAS, CONFIG }
     private TelaAtiva telaAtual;
 
     @Override
@@ -19,10 +22,32 @@ public class Main extends ApplicationAdapter {
         });
 
         // Cria tela inicial com callback para iniciar o jogo
-        telaInicial = new TelaInicial(() -> {
+        telaInicial = new TelaInicial(
+            () -> {
             telaAtual = TelaAtiva.JOGO;
+            telaDeJogo.novoJogo();
             Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
+            },
+            () -> {
+                telaAtual = TelaAtiva.REGRAS;
+                Gdx.input.setInputProcessor(telaDeRegras.stage);
+            },
+            () -> {
+                telaAtual = TelaAtiva.CONFIG;
+                Gdx.input.setInputProcessor(telaDeConfig.stage);
+            }
+        );
+
+        telaDeRegras = new TelaDeRegras(() -> {
+            telaAtual = TelaAtiva.INICIAL;
+            Gdx.input.setInputProcessor(telaInicial.stage);
         });
+
+        telaDeConfig = new TelaDeConfig(() -> {
+            telaAtual = TelaAtiva.INICIAL;
+            Gdx.input.setInputProcessor(telaInicial.stage);
+        });
+
 
         telaAtual = TelaAtiva.INICIAL;
         Gdx.input.setInputProcessor(telaInicial.stage);
@@ -38,6 +63,12 @@ public class Main extends ApplicationAdapter {
             case JOGO:
                 telaDeJogo.render(delta);
                 break;
+                case REGRAS:
+                    telaDeRegras.render(delta);
+                    break;
+            case CONFIG:
+                telaDeConfig.render(delta);
+                break;
         }
     }
 
@@ -45,11 +76,15 @@ public class Main extends ApplicationAdapter {
     public void resize(int width, int height) {
         telaInicial.resize(width, height);
         telaDeJogo.resize(width, height);
+        telaDeRegras.resize(width, height);
+        telaDeConfig.resize(width, height);
     }
 
     @Override
     public void dispose() {
         telaInicial.dispose();
         telaDeJogo.dispose();
+        telaDeRegras.dispose();
+        telaDeConfig.dispose();
     }
 }

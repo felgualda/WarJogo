@@ -1,5 +1,6 @@
 package com.gruposete.war;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -13,11 +14,19 @@ public class Territorio {
     private Polygon area;
     private int tropas;
     private int playerId;
+    private Color color;
 
-    public Territorio(String nome, float[] vertices){
+    public Territorio(String nome,Color color, float[] vertices){
         this.nome = nome;
-        this.area = new Polygon(vertices);
+        float[] corrected_vertices = Utils.multiplicarPontos(vertices, 1.3f);
+        this.area = new Polygon(corrected_vertices);
         this.area.setOrigin(0, 0);
+        this.tropas = 0;
+        this.color = color;
+        this.playerId = 0;
+    }
+
+    public void resetarParaNovoJogo(){
         this.tropas = 0;
         this.playerId = 0;
     }
@@ -33,6 +42,11 @@ public class Territorio {
 
     public void incrementarTropas(){
         this.tropas++;
+    }
+
+    public void decrementarTropas(){
+        if (this.tropas <= 0) {return;}
+        this.tropas--;
     }
 
     public void desenharTexto(BitmapFont font, Batch batch) {
@@ -53,4 +67,5 @@ public class Territorio {
     public int getTropas(){ return this.tropas; }
     public Polygon getArea(){ return this.area; }
     public float[] getVertices(){ return this.area.getVertices(); }
+    public Color getColor(){ return this.color; }
 }
