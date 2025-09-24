@@ -25,43 +25,77 @@ public class TelaDeJogo {
     private Texture background;
     private ShapeRenderer shapeRenderer;
     private Runnable voltarParaMenu;
+    private InputMultiplexer multiplexer;
+    private InputAdapter inputAdapter;
 
     public TelaDeJogo(Runnable voltarParaMenu) {
         this.voltarParaMenu = voltarParaMenu;
 
-        shapeRenderer = new ShapeRenderer();
-
         // Cria stage e define viewport
         stage = new Stage(new FitViewport(1280, 720));
+        inputAdapter = new InputAdapter() {
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                Vector2 worldCoords = new Vector2(screenX, screenY);
+                stage.getViewport().unproject(worldCoords); // CORRETO!
+
+                for (Territorio t : territorios) {
+                    if (t.contains(worldCoords.x, worldCoords.y)) {
+                        t.incrementarTropas();
+                        System.out.println("Clicou no território: " + t.getNome() + " | Tropas: " + t.getTropas());
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
 
         // Carrega skin e fundo
         skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         background = new Texture(Gdx.files.internal("TelaDeJogoBackground.png"));
 
+        font = new BitmapFont();
+        shapeRenderer = new ShapeRenderer();
         territorios = new Array<>();
 
-        // Territórios com formas mais interessantes (não apenas quadrados)
-        territorios.add(new Territorio("Alaska", new float[]{
-            100, 600, 150, 620, 140, 580, 110, 570
-        }));
-        territorios.add(new Territorio("Alberta", new float[]{
-            160, 590, 210, 610, 200, 570, 170, 560
-        }));
-        territorios.add(new Territorio("Mackenzie", new float[]{
-            120, 550, 170, 570, 160, 530, 130, 520
+        territorios.add(new Territorio("Brasil",new float[]{
+            416, 540-369,
+            427, 540-378,
+            438, 540-364,
+            443, 540-351,
+            456, 540-348,
+            462, 540-321,
+            473, 540-310,
+            471, 540-301,
+            435, 540-292,
+            430, 540-276,
+            410, 540-281,
+            409, 540-274,
+            397, 540-275,
+            384, 540-284,
+            384, 540-298,
+            374, 540-307,
+            377, 540-312,
+            389, 540-316,
+            408, 540-323,
+            416, 540-346,
+            425, 540-359
         }));
 
-        // Configuração da fonte
-        font = new BitmapFont();
-        font.getData().setScale(1.5f);
-        font.setColor(Color.WHITE);
+        multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(stage); // mantém a UI funcionando
+        //Gdx.input.setInputProcessor(new InputAdapter() {
+        multiplexer.addProcessor(inputAdapter);
+
+        Gdx.input.setInputProcessor(multiplexer);
 
         // Configuração do botão Voltar
         TextButton btnVoltar = criarBotaoVoltar();
         stage.addActor(btnVoltar);
+    }
 
-        // Configuração do InputMultiplexer para detectar cliques nos territórios
-        configurarInput();
+    public InputMultiplexer getMultiplexer() {
+        return multiplexer;
     }
 
     private TextButton criarBotaoVoltar() {
@@ -94,34 +128,6 @@ public class TelaDeJogo {
         return btnVoltar;
     }
 
-    private void configurarInput() {
-        InputMultiplexer multiplexer = new InputMultiplexer();
-
-        // Primeiro o stage (para os botões da UI)
-        multiplexer.addProcessor(stage);
-
-        // Depois o detector de cliques nos territórios
-        multiplexer.addProcessor(new InputAdapter() {
-            @Override
-            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                // Converte coordenadas da tela para coordenadas do mundo do stage
-                Vector2 worldCoords = stage.getViewport().unproject(new Vector2(screenX, screenY));
-
-                // Verifica cada território
-                for (Territorio t : territorios) {
-                    if (t.contains(worldCoords.x, worldCoords.y)) {
-                        t.incrementarTropas();
-                        System.out.println(t.getNome() + " agora tem " + t.getTropas() + " tropas!");
-                        return true; // Clique foi tratado
-                    }
-                }
-                return false; // Clique não foi em nenhum território
-            }
-        });
-
-        Gdx.input.setInputProcessor(multiplexer);
-    }
-
     public void render(float delta) {
         // Limpa a tela
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
@@ -133,52 +139,26 @@ public class TelaDeJogo {
             stage.getViewport().getWorldHeight());
         stage.getBatch().end();
 
-        // Desenha os contornos dos territórios
-        desenharContornosTerritorios();
-
-        // Desenha os números das tropas
-        desenharNumerosTropas();
-
         // Atualiza e desenha a UI
         stage.act(delta);
         stage.draw();
-    }
 
-    private void desenharContornosTerritorios() {
+// 1. Desenha os contornos dos territórios
         shapeRenderer.setProjectionMatrix(stage.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.RED);
-
         for (Territorio t : territorios) {
-            float[] vertices = t.getArea().getTransformedVertices();
-            for (int i = 0; i < vertices.length - 2; i += 2) {
-                shapeRenderer.line(vertices[i], vertices[i + 1],
-                    vertices[i + 2], vertices[i + 3]);
-            }
-            // Fecha o polígono (último ponto com o primeiro)
-            shapeRenderer.line(vertices[vertices.length - 2], vertices[vertices.length - 1],
-                vertices[0], vertices[1]);
+            shapeRenderer.polygon(t.getArea().getTransformedVertices());
         }
-
         shapeRenderer.end();
-    }
 
-    private void desenharNumerosTropas() {
+// 2. Desenha os números de tropas
         stage.getBatch().begin();
         for (Territorio t : territorios) {
-            Vector2 centro = t.getCentro();
-            // Desenha um fundo escuro para melhor legibilidade
-            font.setColor(Color.BLACK);
-            font.draw(stage.getBatch(), String.valueOf(t.getTropas()), centro.x - 1, centro.y - 1);
-            font.draw(stage.getBatch(), String.valueOf(t.getTropas()), centro.x - 1, centro.y + 1);
-            font.draw(stage.getBatch(), String.valueOf(t.getTropas()), centro.x + 1, centro.y - 1);
-            font.draw(stage.getBatch(), String.valueOf(t.getTropas()), centro.x + 1, centro.y + 1);
-
-            // Texto principal
-            font.setColor(Color.WHITE);
-            font.draw(stage.getBatch(), String.valueOf(t.getTropas()), centro.x, centro.y);
+            t.desenharTexto(font, stage.getBatch());
         }
         stage.getBatch().end();
+        shapeRenderer.end();
+
     }
 
     public void resize(int width, int height) {
@@ -190,6 +170,5 @@ public class TelaDeJogo {
         skin.dispose();
         background.dispose();
         font.dispose();
-        shapeRenderer.dispose();
     }
 }

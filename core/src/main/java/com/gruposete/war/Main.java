@@ -21,7 +21,7 @@ public class Main extends ApplicationAdapter {
         // Cria tela inicial com callback para iniciar o jogo
         telaInicial = new TelaInicial(() -> {
             telaAtual = TelaAtiva.JOGO;
-            Gdx.input.setInputProcessor(telaDeJogo.stage);
+            Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
         });
 
         telaAtual = TelaAtiva.INICIAL;

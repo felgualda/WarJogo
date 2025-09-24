@@ -1,5 +1,9 @@
 package com.gruposete.war;
 
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -30,6 +34,20 @@ public class Territorio {
     public void incrementarTropas(){
         this.tropas++;
     }
+
+    public void desenharTexto(BitmapFont font, Batch batch) {
+        float[] verts = area.getTransformedVertices();
+        float centroX = 0, centroY = 0;
+        for (int i = 0; i < verts.length; i += 2) {
+            centroX += verts[i];
+            centroY += verts[i + 1];
+        }
+        centroX /= (verts.length / 2);
+        centroY /= (verts.length / 2);
+
+        font.draw(batch, String.valueOf(tropas), centroX, centroY);
+    }
+
 
     public String getNome(){ return this.nome; }
     public int getTropas(){ return this.tropas; }
