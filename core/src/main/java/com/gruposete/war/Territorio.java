@@ -63,9 +63,18 @@ public class Territorio {
     }
 
 
+    public void setPlayerId(int playerId) {
+        this.playerId = playerId;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
     public String getNome(){ return this.nome; }
     public int getTropas(){ return this.tropas; }
     public Polygon getArea(){ return this.area; }
     public float[] getVertices(){ return this.area.getVertices(); }
     public Color getColor(){ return this.color; }
+    public int getPlayerId(){ return this.playerId; }
 }
