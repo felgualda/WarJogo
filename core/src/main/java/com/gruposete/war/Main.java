@@ -2,6 +2,10 @@ package com.gruposete.war;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.gruposete.war.ui.TelaDeConfig;
+import com.gruposete.war.ui.TelaDeJogo;
+import com.gruposete.war.ui.TelaDeRegras;
+import com.gruposete.war.ui.TelaInicial;
 
 public class Main extends ApplicationAdapter {
     private TelaInicial telaInicial;
