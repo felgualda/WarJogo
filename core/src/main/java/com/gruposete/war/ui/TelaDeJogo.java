@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.gruposete.war.core.Mapa;
 import com.gruposete.war.core.Territorio;
 import com.gruposete.war.utils.Utils;
 
@@ -22,6 +23,7 @@ public class TelaDeJogo {
 
     public Stage stage;
     private Array<Territorio> territorios;
+    private Mapa mapa;
     private BitmapFont font;
     private Skin skin;
     private Texture background;
@@ -50,6 +52,14 @@ public class TelaDeJogo {
                             t.decrementarTropas();
                             System.out.println("⬇ Clicou com DIREITO: " + t.getNome() + " | Tropas: " + t.getTropas());
                         }
+
+                         // 💡 Exemplo de uso do mapa
+                        Array<Territorio> adj = mapa.getTerritoriosAdj(t);
+                        System.out.println("Adjacentes de " + t.getNome() + ":");
+                        for (Territorio a : adj) {
+                            System.out.println(" - " + a.getNome());
+                        }
+
                         return true;
                     }
                 }
@@ -64,6 +74,7 @@ public class TelaDeJogo {
         font = new BitmapFont();
         shapeRenderer = new ShapeRenderer();
         territorios = Utils.geradorTerritorios();
+        mapa = new Mapa(territorios);       // Inicializando o Mapa de adjacencias
 
         multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(stage); // mantém a UI funcionando
