@@ -12,7 +12,7 @@ public class Territorio {
     private String nome;
     private Polygon area;
     private int tropas;
-    //private int playerId;
+    private int playerId;
     private Color color;
 
     public Territorio(String nome,Color color, float[] vertices){
@@ -67,4 +67,5 @@ public class Territorio {
     public Polygon getArea(){ return this.area; }
     public float[] getVertices(){ return this.area.getVertices(); }
     public Color getColor(){ return this.color; }
+    public int getPlayerID(){ return this.playerId; }       //getter para playerID
 }
