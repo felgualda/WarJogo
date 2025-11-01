@@ -1,19 +1,18 @@
-package com.gruposete.war;
+package com.gruposete.war.core;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.gruposete.war.utils.Utils;
 
 public class Territorio {
     private String nome;
     private Polygon area;
     private int tropas;
-    private int playerId;
+    //private int playerId;
     private Color color;
 
     public Territorio(String nome,Color color, float[] vertices){

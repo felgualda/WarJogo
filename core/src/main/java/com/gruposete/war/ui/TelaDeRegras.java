@@ -1,22 +1,24 @@
-package com.gruposete.war;
+package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
-public class TelaDeConfig {
+public class TelaDeRegras {
     public Stage stage;
     private Skin skin;
     private Texture background;
     private Runnable voltarCallback;
 
-    public TelaDeConfig(Runnable voltarCallback) {
+    public TelaDeRegras(Runnable voltarCallback) {
         this.voltarCallback = voltarCallback;
         stage = new Stage(new FitViewport(1280, 720));
         Gdx.input.setInputProcessor(stage);
@@ -28,29 +30,22 @@ public class TelaDeConfig {
         fontTitulo.getData().setScale(2f);
 
         BitmapFont fontTexto = new BitmapFont();
-        fontTexto.getData().setScale(1.5f);
+        fontTexto.getData().setScale(1.3f);
 
         // Título
         Label.LabelStyle tituloStyle = new Label.LabelStyle(fontTitulo, skin.getColor("white"));
-        Label titulo = new Label("Configurações", tituloStyle);
+        Label titulo = new Label("Regras do Jogo", tituloStyle);
         titulo.setPosition(525, 620);
         titulo.setAlignment(Align.center);
         //titulo.setWidth(1280);
 
-        // slider volume
-
-        Slider sliderVolume = new Slider(0f, 1f, 0.01f, false, skin);
-        sliderVolume.setValue(0.5f); // valor inicial
-        sliderVolume.setSize(400, 40);
-        sliderVolume.setPosition(440, 450);
-
-        Label labelVolume = new Label("Volume", new Label.LabelStyle(fontTexto, skin.getColor("white")));
-        labelVolume.setPosition(440, 500);
-
-        //check box daltonismo
-        CheckBox checkDaltonismo = new CheckBox("   Modo Daltonismo", skin);
-        checkDaltonismo.getLabel().setFontScale(1.5f);
-        checkDaltonismo.setPosition(440, 380);
+        // Texto explicativo
+        Label.LabelStyle textoStyle = new Label.LabelStyle(fontTexto, skin.getColor("white"));
+        Label texto = new Label("\n\n EXÉRCITOS \n\nCada jogador escolhe o exército da cor que lhe agrade dentro das 6 possíveis \n (branco, preto, vermelho, azul, amarelo e verde).\n\n OBJETIVOS \n\nEm seguida à distribuição dos exércitos é feito o sorteio dos objetivos, recebendo cada jogador 1 objetivo dentre os 14 existentes, tomando conhecimento do seu teor e evitando revelá-lo aos seus adversários.\n\nInicialmente, cada jogador terá 1 exército da sua cor em cada um dos territórios recebidos durante o sorteio. Ao final desta operação todos os territórios estarão ocupados por um exército de algum dos participantes\n[Demonstrativo]", textoStyle);
+        texto.setPosition(480-150, 280);
+        texto.setAlignment(Align.center);
+        texto.setWidth(600);
+        texto.setWrap(true);
 
         // botão Voltar
         TextButton.TextButtonStyle btnStyle = new TextButton.TextButtonStyle();
@@ -72,9 +67,7 @@ public class TelaDeConfig {
 
         // adiciona ao stage
         stage.addActor(titulo);
-        stage.addActor(labelVolume);
-        stage.addActor(sliderVolume);
-        stage.addActor(checkDaltonismo);
+        stage.addActor(texto);
         stage.addActor(btnVoltar);
     }
 

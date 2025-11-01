@@ -1,4 +1,4 @@
-package com.gruposete.war;
+package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
