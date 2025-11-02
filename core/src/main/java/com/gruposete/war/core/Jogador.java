@@ -6,6 +6,7 @@ import java.util.List;
 public class Jogador {
     private String nome;
     private CorJogador cor;
+    private int playerId;
 
     private List<Territorio> territorios;
     private List<Carta> cartas;
@@ -13,12 +14,13 @@ public class Jogador {
 
     private int exercitosDisponiveis;
 
-    public Jogador(String nome, CorJogador cor) {
+    public Jogador(String nome, CorJogador cor, int playerId) {
         this.nome = nome;
         this.cor = cor;
         this.territorios = new ArrayList<>();
         this.cartas = new ArrayList<>();
         this.exercitosDisponiveis = 0;
+        this.playerId = playerId;
     }
 
     // GETTERS E SETTERS
@@ -51,6 +53,10 @@ public class Jogador {
         return objetivo;
     }
 
+    public int getPlayerId() {
+        return playerId;
+    }
+
     public void setObjetivo(Objetivo objetivo) {
         this.objetivo = objetivo;
     }
@@ -73,5 +79,20 @@ public class Jogador {
 
     public void removerCarta(Carta c) {
         cartas.remove(c);
+    }
+
+    public void adicionarExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis += quantidade;
+        }
+    }
+
+    public void removerExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis -= quantidade;
+            if (this.exercitosDisponiveis < 0) {
+                this.exercitosDisponiveis = 0; // Garante que não fique negativo
+            }
+        }
     }
 }

@@ -100,4 +100,37 @@ public class ServicoDeCartas {
         
         return false;
     }
+
+    public static void realizarTrocaDeCartas(Jogador jogador, List<Carta> cartasTrocadas, SetupPartida setup) {
+        if (cartasTrocadas.size() != 3 || !isCombinacaoValida(cartasTrocadas.get(0), cartasTrocadas.get(1), cartasTrocadas.get(2))) {
+            throw new IllegalArgumentException("Combinação de cartas inválida para a troca.");
+        }
+
+        // Calcular bônus de exércitos e incrementar o contador global
+        int proximaTroca = setup.getContadorGlobalDeTrocas() + 1;
+        int bonusExercitos = calcularBonusTroca(proximaTroca);
+        setup.incrementarContadorGlobalDeTrocas();
+
+        // Adicionar o bônus principal aos exércitos disponíveis do jogador
+        jogador.adicionarExercitosDisponiveis(bonusExercitos);
+        System.out.println(String.format("Troca #%d concluída. Exércitos base recebidos: %d", proximaTroca, bonusExercitos));
+
+        // Processar cartas: Dar bônus de 2 exércitos por território e mover para o descarte
+        List<Carta> baralhoDescarte = setup.getBaralhoDeDescarte();
+
+        for (Carta carta : cartasTrocadas) {
+            Territorio t = carta.getTerritorio();
+            
+            // Verifica se a carta é de território e se o jogador a possui
+            if (t != null && t.getPlayerId() != 0 && t.getPlayerId() == jogador.getPlayerId()) {
+                t.adicionarTropas(2);
+                System.out.println(String.format("Bônus de Território recebido: 2 exércitos em" + carta.getTerritorio().getNome()));
+            }
+
+            // Remove da mão e move para o Baralho de Descarte
+            jogador.removerCarta(carta);
+            baralhoDescarte.add(carta);
+        }
+
+    }
 }

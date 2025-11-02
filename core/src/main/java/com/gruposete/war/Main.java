@@ -39,9 +39,9 @@ public class Main extends ApplicationAdapter {
                 // (SIMULAÇÃO) Cria a lista de jogadores.
                 // No futuro, isso virá de uma Tela De Setup.
                 List<Jogador> jogadores = new ArrayList<>();
-                jogadores.add(new Jogador("Jogador 1", CorJogador.VERMELHO));
-                jogadores.add(new Jogador("Jogador 2", CorJogador.AZUL));
-                jogadores.add(new Jogador("Jogador 3", CorJogador.VERDE));
+                jogadores.add(new Jogador("Jogador 1", CorJogador.VERMELHO, 1));
+                jogadores.add(new Jogador("Jogador 2", CorJogador.AZUL, 2));
+                jogadores.add(new Jogador("Jogador 3", CorJogador.VERDE, 3));
 
                 // Roda a lógica de Setup para preparar a partida
                 SetupPartida setup = new SetupPartida(jogadores);

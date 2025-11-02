@@ -23,6 +23,8 @@ public class SetupPartida {
     private List<Objetivo> deckDeObjetivos;
     private Mapa mapaAdjacencias; 
     private int contadorGlobalDeTrocas = 0; // Adicionado para fazer tracking das trocas
+    private List<Carta> baralhoDeTerritorios; 
+    private List<Carta> baralhoDeDescarte;
 
     // Construtor, recebe lista de jogadores (criada pela UI)
     public SetupPartida(List<Jogador> jogadores) {
@@ -133,6 +135,14 @@ public class SetupPartida {
 
     public int getContadorGlobalDeTrocas() {
         return this.contadorGlobalDeTrocas;
+    }
+
+    public List<Carta> getBaralhoDeTerritorios() {
+        return baralhoDeTerritorios;
+    }
+
+    public List<Carta> getBaralhoDeDescarte() {
+        return baralhoDeDescarte;
     }
 
     public void incrementarContadorGlobalDeTrocas() {

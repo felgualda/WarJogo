@@ -48,6 +48,21 @@ public class Territorio {
         this.tropas--;
     }
 
+    public void adicionarTropas(int quantidade) {
+        if (quantidade > 0) {
+            this.tropas += quantidade;
+        }
+    }
+
+    public void removerTropas(int quantidade) {
+        if (quantidade > 0) {
+            this.tropas -= quantidade;
+            if (this.tropas < 1) {
+                this.tropas = 1;
+            }
+        }
+    }
+
     public void desenharTexto(BitmapFont font, Batch batch) {
         float[] verts = area.getTransformedVertices();
         float centroX = 0, centroY = 0;
