@@ -1,0 +1,80 @@
+**1-2: Curinga**
+
+1- Curinga
+2- Curinga
+
+**3-9: Europa**
+
+3- Alemanha	
+4- França						
+5- Inglaterra						  
+6- Islândia						  
+7- Moscou						   
+8- Polônia						  
+9- Suécia						   
+
+**10-13: América do Sul**					  
+
+10- Argentina						
+11- Brasil						   
+12- Peru						   
+13- Venezuela					   
+
+**14-19: África**						  
+
+14- África do Sul					  
+15- Argélia						
+16- Congo						   
+17- Egito						
+18- Madagascar					  
+19- Sudão					 
+
+**20-23: Oceania**
+
+ 20- Austrália
+21- Borneo
+22- Nova Guiné
+23- Sumatra
+
+**24-32: América do Norte**
+
+24- Alasca
+25- Califórnia
+26- Groenlândia
+27- Labrador
+28- Mackenzie
+29- México
+30- Nova Iorque
+31- Ottawa
+32- Vancouver
+ 
+**33-44: Ásia**
+33- Aral
+34- China
+35- Dudinka
+36- índia
+37- Mongólia
+38- Omsk
+39- Oriente Médio
+40- Sibéria
+41- Tchita
+42- Vietnã
+43- Vladvostok
+44- Japão
+
+**45-58: Cartas Objetivo**
+
+45- Destruir Azuis
+46- Destruir Amarelos
+47- Destruir Brancos
+48- Destruir Pretos
+49- Destruir Verdes
+50- Destruir Vermelhos
+51- Conquistar 24 territórios
+52- Conquistar 18 territórios com pelo menos 2 exércitos em cada
+53- Conquistar América do Norte e África
+54- Conquistar Ásia e África
+55- Conquistar América do Norte e Oceania
+56- Conquistar Ásia e América do Sul
+57- Conquistar Europa, América do Sul e +1 continente.
+58- Conquistar Europa, Oceania e +1 continente.
