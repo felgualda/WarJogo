@@ -75,7 +75,7 @@ public class TelaInicial {
         btnJogar.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                if (jogarCallback != null) jogarCallback.run();
+                if (jogarCallback != null) selecaoCallback.run();
             }
         });
 
