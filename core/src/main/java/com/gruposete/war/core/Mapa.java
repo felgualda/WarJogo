@@ -325,12 +325,12 @@ public Array<Territorio> getTerritoriosAdj(Territorio territorio){
 public Array<Territorio> getAlidadosAdj(Territorio territorio){
     Array<Territorio> aliados_adj = new Array<>();
     Array<Territorio> adj = adjacencias.get(territorio);
-    int tID = territorio.getPlayerID();
+    int tID = territorio.getPlayerId();
 
     if (adj == null) return aliados_adj;
 
     for (Territorio t : adj){
-        if (t.getPlayerID() == tID){
+        if (t.getPlayerId() == tID){
             aliados_adj.add(t);
         }
     }
@@ -340,12 +340,12 @@ public Array<Territorio> getAlidadosAdj(Territorio territorio){
 public Array<Territorio> getInimigosAdj(Territorio territorio){
     Array<Territorio> inimigos_adj = new Array<>();
     Array<Territorio> adj = adjacencias.get(territorio);
-    int tID = territorio.getPlayerID();
+    int tID = territorio.getPlayerId();
 
     if (adj == null) return inimigos_adj;
 
     for (Territorio t : adj){
-        if (t.getPlayerID() != tID){
+        if (t.getPlayerId() != tID){
             inimigos_adj.add(t);
         }
     }
