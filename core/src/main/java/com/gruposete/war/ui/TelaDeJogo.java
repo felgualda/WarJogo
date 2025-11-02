@@ -43,10 +43,11 @@ public class TelaDeJogo {
     private InputAdapter inputAdapter;
     private com.badlogic.gdx.math.EarClippingTriangulator triangulator = new com.badlogic.gdx.math.EarClippingTriangulator(); // "encontra triangulos"
 
-    public TelaDeJogo(Runnable voltarParaMenu, List<Jogador> jogadores, Array<Territorio> territoriosProntos) {
+    public TelaDeJogo(Runnable voltarParaMenu, List<Jogador> jogadores, Array<Territorio> territoriosProntos, Mapa mapaAdjacenciaPronto) {
         this.voltarParaMenu = voltarParaMenu;
         this.jogadores = jogadores; // Agora 'jogadores' vem do parâmetro
         this.territorios = territoriosProntos; // Agora 'territoriosProntos' vem do parâmetro
+        this.mapa = mapaAdjacenciaPronto;
 
         // Cria stage e define viewport
         stage = new Stage(new FitViewport(1280, 720));
