@@ -75,4 +75,8 @@ public class Territorio {
     public float[] getVertices(){ return this.area.getVertices(); }
     public Color getColor(){ return this.color; }
     public int getPlayerId(){ return this.playerId; };
+
+    public void setTropas(int tropas) {
+        this.tropas = tropas;
+    }
 }

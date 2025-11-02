@@ -3,10 +3,10 @@ package com.gruposete.war.core;
 import java.util.Random;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 
 
-
-public class Ataque {
+public class AtaqueLogica {
     private Territorio territorioAtacante;
     private Territorio territorioDefensor;
     private Jogador jogadorAtacante;
@@ -14,7 +14,7 @@ public class Ataque {
     private Mapa mapa;
     private Random random = new Random();
 
-    public Ataque(Territorio territorioA, Territorio territorioD, Jogador jogadorA, Jogador jogadorD, Mapa mapa){
+    public AtaqueLogica(Territorio territorioA, Territorio territorioD, Jogador jogadorA, Jogador jogadorD, Mapa mapa){
         this.territorioAtacante = territorioA;
         this.territorioDefensor = territorioD;
         this.jogadorAtacante = jogadorA;
@@ -32,8 +32,8 @@ public class Ataque {
         if (qntdDadosDefensor > 3) { qntdDadosDefensor = 3; }
 
         rolarDados(qntdDadosAtacante, qntdDadosDefensor);
-            
-        if (territorioAtacante.getTropas() == 1) { 
+
+        if (territorioAtacante.getTropas() == 1) {
             return AtaqueEstado.TROPAS_INSUFICIENTES;
         }
         if (territorioDefensor.getTropas() == 0) {
@@ -48,7 +48,7 @@ public class Ataque {
 
         Integer[] dadosAtacante = new Integer[3];
         Integer[] dadosDefensor = new Integer[3];
-        
+
         // Rolagem dos dados
 
         for (int i = 0; i < qntdDadosAtacante; i++){
@@ -58,21 +58,21 @@ public class Ataque {
         for (int i = 0; i < qntdDadosDefensor; i++){
             dadosDefensor[i] = random.nextInt(6) + 1;
         }
-        
+
         // Ordena em ordem decrescente (maior dado contra maior dado, menor dado contra menor dado)
 
-        Arrays.sort(dadosAtacante, Collections.reverseOrder());
-        Arrays.sort(dadosDefensor, Collections.reverseOrder());
+        Arrays.sort(dadosAtacante, Comparator.nullsLast(Collections.reverseOrder()));
+        Arrays.sort(dadosDefensor, Comparator.nullsLast(Collections.reverseOrder()));
 
         // Verificar, para cada dado, quem ganhou
 
         for (int i = 0; i < qntdDadosAtacante; i++){
             if (dadosDefensor[i] != null){
-                if (dadosDefensor[i] < dadosAtacante[i]) { 
-                    territorioDefensor.decrementarTropas(); 
-                } 
-                else { 
-                    territorioAtacante.decrementarTropas(); 
+                if (dadosDefensor[i] < dadosAtacante[i]) {
+                    territorioDefensor.decrementarTropas();
+                }
+                else {
+                    territorioAtacante.decrementarTropas();
                 }
             }
 

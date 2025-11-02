@@ -2,6 +2,7 @@ package com.gruposete.war;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.gruposete.war.core.*;
 import com.gruposete.war.ui.TelaDeConfig;
 import com.gruposete.war.ui.TelaDeJogo;
 import com.gruposete.war.ui.TelaDeRegras;
@@ -10,11 +11,7 @@ import com.gruposete.war.ui.TelaDeSelecaoDeJogadores;
 
 // Imports adicionados para a nova lógica de setup
 import com.badlogic.gdx.utils.Array;
-import com.gruposete.war.core.CorJogador;
-import com.gruposete.war.core.Jogador;
-import com.gruposete.war.core.SetupPartida;
-import com.gruposete.war.core.Territorio;
-import com.gruposete.war.core.Mapa;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,30 +37,28 @@ public class Main extends ApplicationAdapter {
         // 1. Criamos os callbacks para a nova TelaDeSelecao.
         // O 'iniciarJogoCallback' contém a lógica de setup que antes estava no 'jogarCallback' da TelaInicial.
         Runnable iniciarJogoCallback = () -> {
-            // Pega a lista de jogadores da tela de seleção (não é mais uma simulação)
+            // Main.java -> iniciarJogoCallback (CORRIGIDO)
+// 1. Pega os jogadores
             List<Jogador> jogadores = telaDeSelecao.getJogadoresSelecionados();
 
-            // Roda a lógica de Setup para preparar a partida
-            SetupPartida setup = new SetupPartida(jogadores);
-            List<Jogador> jogadoresProntos = setup.getJogadoresPreparados();
-            Array<Territorio> territoriosProntos = setup.getTodosOsTerritorios();
-            Mapa mapaAdjacenciaPronto = setup.getMapaAdjacencias(); // (Esta linha já estava no seu commit)
+// 2. Cria o Controlador (Tarefa #26)
+            ControladorDePartida controlador = new ControladorDePartida(jogadores);
 
-            // Cria tela de jogo com callback para voltar ao menu
+// 3. Manda o controlador se preparar (Tarefas #22, #23, #24)
+            controlador.iniciarPartida();
+
+// 4. Cria o callback de voltar (sem mudança)
             Runnable voltarCallback = () -> {
                 telaAtual = TelaAtiva.INICIAL;
                 Gdx.input.setInputProcessor(telaInicial.stage);
-                // Descarta a tela de jogo antiga para liberar memória
                 if (telaDeJogo != null) {
                     telaDeJogo.dispose();
                     telaDeJogo = null;
                 }
             };
 
-            // Cria a nova TelaDeJogo com os dados prontos (incluindo o mapa do seu commit)
-            telaDeJogo = new TelaDeJogo(voltarCallback, jogadoresProntos, territoriosProntos, mapaAdjacenciaPronto);
-
-            // Muda o estado do jogo
+// 5. Cria a TelaDeJogo passando SÓ o controlador
+            telaDeJogo = new TelaDeJogo(voltarCallback, controlador);
             telaAtual = TelaAtiva.JOGO;
             Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
         };
