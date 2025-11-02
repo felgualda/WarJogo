@@ -144,6 +144,8 @@ public class Mapa {
         Array<Territorio> egitoAdj = new Array<>();
         egitoAdj.add(tNomes.get("Argelia"));
         egitoAdj.add(tNomes.get("Sudão"));
+        egitoAdj.add(tNomes.get("Polônia"));
+        egitoAdj.add(tNomes.get("França"));
         egitoAdj.add(tNomes.get("Oriente Médio"));
         mapa.put(tNomes.get("Egito"), egitoAdj);
 
@@ -170,6 +172,7 @@ public class Mapa {
         francaAdj.add(tNomes.get("Alemanha"));
         francaAdj.add(tNomes.get("Polônia"));
         francaAdj.add(tNomes.get("Argelia"));
+        francaAdj.add(tNomes.get("Egito"));
         mapa.put(tNomes.get("França"), francaAdj);
 
         Array<Territorio> alemanhaAdj = new Array<>();
@@ -183,6 +186,8 @@ public class Mapa {
         poloniaAdj.add(tNomes.get("França"));
         poloniaAdj.add(tNomes.get("Alemanha"));
         poloniaAdj.add(tNomes.get("Moscou"));
+        poloniaAdj.add(tNomes.get("Oriente Médio"));
+        poloniaAdj.add(tNomes.get("Egito"));
         mapa.put(tNomes.get("Polônia"), poloniaAdj);
 
         Array<Territorio> moscouAdj = new Array<>();
@@ -268,7 +273,6 @@ public class Mapa {
         Array<Territorio> vietnaAdj = new Array<>();
         vietnaAdj.add(tNomes.get("India"));
         vietnaAdj.add(tNomes.get("China"));
-        vietnaAdj.add(tNomes.get("Sumatra"));
         vietnaAdj.add(tNomes.get("Borneo"));
         mapa.put(tNomes.get("Vietnã"), vietnaAdj);
 
@@ -304,14 +308,12 @@ public class Mapa {
 
         Array<Territorio> sumatraAdj = new Array<>();
         sumatraAdj.add(tNomes.get("Australia"));
-        sumatraAdj.add(tNomes.get("Borneo"));
-        sumatraAdj.add(tNomes.get("Vietnã"));
+        sumatraAdj.add(tNomes.get("India"));
         mapa.put(tNomes.get("Sumatra"), sumatraAdj);
 
         Array<Territorio> borneoAdj = new Array<>();
         borneoAdj.add(tNomes.get("Australia"));
         borneoAdj.add(tNomes.get("Nova Guiné"));
-        borneoAdj.add(tNomes.get("Sumatra"));
         borneoAdj.add(tNomes.get("Vietnã"));
         mapa.put(tNomes.get("Borneo"), borneoAdj);
 

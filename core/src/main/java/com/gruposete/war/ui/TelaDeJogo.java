@@ -67,10 +67,22 @@ public class TelaDeJogo {
                             System.out.println("⬇ Clicou com DIREITO: " + t.getNome() + " | Tropas: " + t.getTropas());
                         }
 
-                         // 💡 Exemplo de uso do mapa
+                         // Exemplo de uso do mapa
                         Array<Territorio> adj = mapa.getTerritoriosAdj(t);
                         System.out.println("Adjacentes de " + t.getNome() + ":");
                         for (Territorio a : adj) {
+                            System.out.println(" - " + a.getNome());
+                        }
+
+                        Array<Territorio> inimigos = mapa.getInimigosAdj(t);
+                        System.out.println("Inimigos de " + t.getNome() + ":");
+                        for (Territorio a : inimigos) {
+                            System.out.println(" - " + a.getNome());
+                        }
+
+                        Array<Territorio> aliados = mapa.getAlidadosAdj(t);
+                        System.out.println("Aliados de " + t.getNome() + ":");
+                        for (Territorio a : aliados) {
                             System.out.println(" - " + a.getNome());
                         }
 
