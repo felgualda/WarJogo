@@ -22,6 +22,7 @@ public class SetupPartida {
     private Array<Territorio> todosOsTerritorios;
     private List<Objetivo> deckDeObjetivos;
     private Mapa mapaAdjacencias; 
+    private int contadorGlobalDeTrocas = 0; // Adicionado para fazer tracking das trocas
 
     // Construtor, recebe lista de jogadores (criada pela UI)
     public SetupPartida(List<Jogador> jogadores) {
@@ -128,5 +129,13 @@ public class SetupPartida {
 
     public Mapa getMapaAdjacencias(){
         return this.mapaAdjacencias;
+    }
+
+    public int getContadorGlobalDeTrocas() {
+        return this.contadorGlobalDeTrocas;
+    }
+
+    public void incrementarContadorGlobalDeTrocas() {
+        this.contadorGlobalDeTrocas++;
     }
 }
