@@ -12,7 +12,7 @@ public class Territorio {
     private String nome;
     private Polygon area;
     private int tropas;
-    //private int playerId;
+    private int playerId;
     private Color color;
 
     public Territorio(String nome,Color color, float[] vertices){
@@ -61,10 +61,18 @@ public class Territorio {
         font.draw(batch, String.valueOf(tropas), centroX, centroY);
     }
 
+    public void setPlayerId(int playerId){
+        this.playerId = playerId;
+    }
+
+    public void setColor(Color color){
+        this.color = color;
+    }
 
     public String getNome(){ return this.nome; }
     public int getTropas(){ return this.tropas; }
     public Polygon getArea(){ return this.area; }
     public float[] getVertices(){ return this.area.getVertices(); }
     public Color getColor(){ return this.color; }
+    public int getPlayerId(){ return this.playerId; };
 }
