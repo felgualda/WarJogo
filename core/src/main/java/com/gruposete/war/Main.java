@@ -6,6 +6,7 @@ import com.gruposete.war.ui.TelaDeConfig;
 import com.gruposete.war.ui.TelaDeJogo;
 import com.gruposete.war.ui.TelaDeRegras;
 import com.gruposete.war.ui.TelaInicial;
+import com.gruposete.war.ui.TelaDeSelecaoDeJogadores;
 
 // Imports adicionados para a nova lógica de setup
 import com.badlogic.gdx.utils.Array;
@@ -19,12 +20,13 @@ import java.util.List;
 
 public class Main extends ApplicationAdapter {
     private TelaInicial telaInicial;
+    private TelaDeSelecaoDeJogadores telaDeSelecao;
     private TelaDeJogo telaDeJogo; // A telaDeJogo agora começa null
     private TelaDeRegras telaDeRegras;
     private TelaDeConfig telaDeConfig;
 
 
-    private enum TelaAtiva { INICIAL, JOGO, REGRAS, CONFIG }
+    private enum TelaAtiva { INICIAL, SELECAO, JOGO, REGRAS, CONFIG }
     private TelaAtiva telaAtual;
 
     @Override
@@ -67,11 +69,11 @@ public class Main extends ApplicationAdapter {
                 telaAtual = TelaAtiva.JOGO;
                 Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
             },
-            () -> { // Callback "Regras" 
+            () -> { // Callback "Regras"
                 telaAtual = TelaAtiva.REGRAS;
                 Gdx.input.setInputProcessor(telaDeRegras.stage);
             },
-            () -> { // Callback "Config" 
+            () -> { // Callback "Config"
                 telaAtual = TelaAtiva.CONFIG;
                 Gdx.input.setInputProcessor(telaDeConfig.stage);
             }
