@@ -1,18 +1,18 @@
 package com.gruposete.war.core;
-// Como SetupDaPartida utiliza a cor gráfica da gdx (tal qual territorio), ajustei essa classe para além de Labels, também implementar as cores em si 
+// Como SetupDaPartida utiliza a cor gráfica da gdx (tal qual territorio), ajustei essa classe para além de Labels, também implementar as cores em si
 import com.badlogic.gdx.graphics.Color;
 
 public enum CorJogador {
-    PRETO(Color.BLACK),
+    PRETO(Color.DARK_GRAY),
     VERDE(Color.GREEN),
-    AZUL(Color.BLUE),
+    AZUL(Color.CYAN),
     VERMELHO(Color.RED),
     AMARELO(Color.YELLOW),
     BRANCO(Color.WHITE);
 
     // Atributo privado para guardar a cor do LibGDX
     private final Color gdxColor;
-    
+
     CorJogador(Color gdxColor){
         this.gdxColor = gdxColor;
     }
