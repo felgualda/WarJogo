@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Array;
 
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.Territorio;
+import com.gruposete.war.core.Mapa;
 import com.gruposete.war.core.Objetivo;
 import com.gruposete.war.core.CorJogador;
 import com.gruposete.war.utils.Utils; 
@@ -19,7 +20,8 @@ public class SetupPartida {
 
     private List<Jogador> jogadores;
     private Array<Territorio> todosOsTerritorios;
-    private List<Objetivo> deckDeObjetivos; 
+    private List<Objetivo> deckDeObjetivos;
+    private Mapa mapaAdjacencias; 
 
     // Construtor, recebe lista de jogadores (criada pela UI)
     public SetupPartida(List<Jogador> jogadores) {
@@ -35,6 +37,9 @@ public class SetupPartida {
     private void carregarRecursosDoJogo() {
         this.todosOsTerritorios = Utils.geradorTerritorios();
         System.out.println("SETUP: " + this.todosOsTerritorios.size + " territórios carregados do Utils.");
+
+        // Gera o mapa de adjacencias
+        this.mapaAdjacencias = new Mapa(todosOsTerritorios);
 
         // Carrega Deck de Objetivos 
         this.deckDeObjetivos = new ArrayList<>();
@@ -119,5 +124,9 @@ public class SetupPartida {
     // Retorna a lista de territórios atualizada (com donos, cores e tropas). 
     public Array<Territorio> getTodosOsTerritorios() {
         return this.todosOsTerritorios;
+    }
+
+    public Mapa getMapaAdjacencias(){
+        return this.mapaAdjacencias;
     }
 }

@@ -13,6 +13,7 @@ import com.gruposete.war.core.CorJogador;
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.SetupPartida;
 import com.gruposete.war.core.Territorio;
+import com.gruposete.war.core.Mapa;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class Main extends ApplicationAdapter {
                 SetupPartida setup = new SetupPartida(jogadores);
                 List<Jogador> jogadoresProntos = setup.getJogadoresPreparados();
                 Array<Territorio> territoriosProntos = setup.getTodosOsTerritorios();
+                Mapa mapaAdjacenciaPronto = setup.getMapaAdjacencias();
 
                 // Cria tela de jogo com callback para voltar ao menu
                 Runnable voltarCallback = () -> {
@@ -59,7 +61,7 @@ public class Main extends ApplicationAdapter {
                 };
 
                 // Cria a nova TelaDeJogo com os dados prontos
-                telaDeJogo = new TelaDeJogo(voltarCallback, jogadoresProntos, territoriosProntos);
+                telaDeJogo = new TelaDeJogo(voltarCallback, jogadoresProntos, territoriosProntos, mapaAdjacenciaPronto);
 
                 // Muda o estado do jogo
                 telaAtual = TelaAtiva.JOGO;
