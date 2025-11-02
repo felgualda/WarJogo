@@ -2,7 +2,10 @@ package com.gruposete.war.core; // Ajuste o pacote se necessário
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 // import java.util.Random; // Não é mais necessário, AtaqueLogica tem o seu
 
 /**
@@ -20,7 +23,7 @@ public class ControladorDePartida {
     private int indiceJogadorAtual;
     private Jogador jogadorAtual;
     private int tropasADistribuir;
-
+    private Map<Territorio, Integer> tropasInicioMovimentacao = new HashMap<>();
     // --- Estado do Turno ---
     public enum EstadoTurno {
         DISTRIBUINDO,
@@ -37,7 +40,6 @@ public class ControladorDePartida {
      */
     public ControladorDePartida(List<Jogador> jogadoresSelecionados) {
         this.jogadores = jogadoresSelecionados;
-        // O 'Random' não é mais necessário aqui; AtaqueLogica gerencia o seu.
     }
 
     /**
@@ -75,7 +77,6 @@ public class ControladorDePartida {
 
         this.estadoTurno = EstadoTurno.DISTRIBUINDO;
         this.conquistouTerritorioNesteTurno = false;
-
         calcularTropasDoTurno();
     }
 
@@ -89,6 +90,12 @@ public class ControladorDePartida {
                 break;
             case ATACANDO:
                 this.estadoTurno = EstadoTurno.MOVIMENTANDO;
+                tropasInicioMovimentacao.clear();
+                for (Territorio t : territorios) {
+                    if (t.getPlayerId()-1 == jogadores.indexOf(jogadorAtual)) {
+                        tropasInicioMovimentacao.put(t, t.getTropas());
+                    }
+                }
                 break;
             case MOVIMENTANDO:
                 passarAVez();
@@ -147,12 +154,87 @@ public class ControladorDePartida {
      * @param destino O território conquistado (que agora tem 0 tropas).
      * @param tropasParaMover A quantidade que o usuário escolheu.
      */
-    public void moverTropasAposConquista(Territorio origem, Territorio destino, int tropasParaMover) {
-        if (tropasParaMover < 1) return;
-        if (tropasParaMover > 3) return;
+    public boolean moverTropasAposConquista(Territorio origem, Territorio destino, int tropasParaMover) {
 
-        destino.setTropas(destino.getTropas() + tropasParaMover); // (Será 0 + tropas)
+        // Validação 1: Regra do War (mínimo de 1)
+        if (tropasParaMover < 1) {
+            Gdx.app.log("Controlador", "Movimento falhou: Mínimo 1 tropa.");
+            return false;
+        }
+
+        // Validação 2: (O FIX) Garante que a origem fica com pelo menos 1 tropa.
+        int tropasDisponiveisParaMover = origem.getTropas() - 1;
+
+        if (tropasParaMover > tropasDisponiveisParaMover) {
+            Gdx.app.log("Controlador", "Movimento falhou: Não pode mover mais do que o disponível.");
+            return false;
+        }
+
+        // Validação 3: Limita a 3 tropas
+        if (tropasParaMover > 3) {
+            Gdx.app.log("Controlador", "Movimento falhou: Máximo de 3 tropas pós-ataque.");
+            return false;
+        }
+
+        // Sucesso: Realiza a movimentação
+        Gdx.app.log("Controlador", "Movendo " + tropasParaMover + " tropas.");
+        destino.setTropas(tropasParaMover); // (Será 0 + tropas)
         origem.setTropas(origem.getTropas() - tropasParaMover);
+        return true;
+    }
+
+    public boolean moverTropasEstrategicas(Territorio origem, Territorio destino, int tropasParaMover) {
+        // Validação 1: Dono e Adjacência
+        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
+        if (origem.getPlayerId() - 1 != indiceJogador || destino.getPlayerId() - 1 != indiceJogador) {
+            Gdx.app.log("Controlador", "Mov. Estratégico falhou: Territórios não são do jogador.");
+            return false;
+        }
+        if (!this.mapa.isAdjacente(origem, destino)) {
+            Gdx.app.log("Controlador", "Mov. Estratégico falhou: Territórios não adjacentes.");
+            return false;
+        }
+
+        // Validação 2 (Constraint 3): Pega o limite de tropas do "snapshot"
+        Integer tropasIniciais = tropasInicioMovimentacao.get(origem);
+        if (tropasIniciais == null) {
+            tropasIniciais = origem.getTropas();
+        }
+
+        // O máximo que ele pode mover é o que tinha no início, menos 1
+        int tropasDisponiveisParaMoverDoSnapshot = tropasIniciais;
+
+        if (tropasParaMover > tropasDisponiveisParaMoverDoSnapshot) {
+            Gdx.app.log("Controlador", "Mov. Estratégico falhou: Só pode mover tropas que iniciaram a fase no território.");
+            return false;
+        }
+        // Validação 3: Garante que as tropas *atuais* também são suficientes
+        if (tropasParaMover > (origem.getTropas() - 1)) {
+            Gdx.app.log("Controlador", "Mov. Estratégico falhou: Tropas insuficientes.");
+            return false;
+        }
+        if (tropasParaMover < 1) {
+            Gdx.app.log("Controlador", "Mov. Estratégico falhou: Mínimo 1 tropa.");
+            return false;
+        }
+
+        // --- SUCESSO ---
+
+        // 1. Realiza a movimentação
+        origem.setTropas(origem.getTropas() - tropasParaMover);
+        destino.setTropas(destino.getTropas() + tropasParaMover);
+
+        // 2. ATUALIZA O SNAPSHOT (A sua regra)
+        // Reduz o "crédito" de movimentação daquele território
+        int novoLimite = tropasIniciais - tropasParaMover;
+        tropasInicioMovimentacao.put(origem, novoLimite);
+
+        Gdx.app.log("Controlador", "Mov. Estratégico feito. Limite de " + origem.getNome() + " agora é " + (novoLimite - 1));
+
+        // 3. REMOVE o 'passarAVez()'
+        // O jogador agora pode fazer mais movimentos ou clicar em "Encerrar Turno".
+
+        return true;
     }
 
     /**
@@ -165,7 +247,9 @@ public class ControladorDePartida {
 
 
     // --- GETTERS (Para a TelaDeJogo ler o estado) ---
-
+    public int getTropasIniciaisMovimentacao(Territorio t) {
+        return tropasInicioMovimentacao.getOrDefault(t, t.getTropas());
+    }
     public List<Jogador> getJogadores() { return jogadores; }
     public Array<Territorio> getTerritorios() { return territorios; }
     public Mapa getMapa() { return mapa; }
