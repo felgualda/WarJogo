@@ -18,11 +18,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.gruposete.war.core.ControladorDePartida; // Importa o Controlador
+import com.gruposete.war.core.*;
 import com.gruposete.war.core.ControladorDePartida.EstadoTurno; // Importa o Enum
-import com.gruposete.war.core.AtaqueEstado; // Importa o Enum de Ataque
-import com.gruposete.war.core.Territorio;
-import com.gruposete.war.core.Jogador; // Importa o Jogador
 
 // imports para preenchimento de territórios
 import com.badlogic.gdx.math.EarClippingTriangulator;
@@ -42,6 +39,7 @@ public class TelaDeJogo {
     private EarClippingTriangulator triangulator = new EarClippingTriangulator();
 
     private Territorio territorioAtacante = null;
+    private Territorio territorioOrigemMovimento = null;
 
     private Texture bannerBackground;
     private Texture texArrowRight, texHuman, texAI, texIconBorder;
@@ -62,86 +60,112 @@ public class TelaDeJogo {
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
                 Vector2 worldCoords = new Vector2(screenX, screenY);
                 stage.getViewport().unproject(worldCoords);
-
-                // Pega a fase atual do jogo
                 EstadoTurno fase = controlador.getEstadoTurno();
 
-                for (Territorio t : controlador.getTerritorios()) {
-                    if (t.contains(worldCoords.x, worldCoords.y)) {
-
-                        // --- Lógica de DISTRIBUIÇÃO ---
-                        if (fase == EstadoTurno.DISTRIBUINDO) {
-                            if (button == Input.Buttons.LEFT) {
-                                // Manda o controlador alocar a tropa
-                                boolean alocou = controlador.alocarTropa(t);
-                                if (alocou) {
-                                    System.out.println("Alocou 1 tropa em " + t.getNome() + ". Restam: " + controlador.getTropasADistribuir());
-                                }
-                            }
-                        }
-
-                        // --- Lógica de ATAQUE ---
-                        else if (fase == EstadoTurno.ATACANDO) {
-                            if (button == Input.Buttons.LEFT) {
-                                // 1. Selecionando o Atacante
-                                if (territorioAtacante == null) {
-                                    // Verifica se o território é do jogador atual e tem tropas
-                                    if (controlador.getJogadores().get(t.getPlayerId()-1) == controlador.getJogadorAtual() && t.getTropas() > 1) {
-                                        territorioAtacante = t;
-                                        System.out.println("Atacante selecionado: " + t.getNome());
-                                        // (TODO: Adicionar feedback visual de seleção)
-                                    }
-                                }
-                                // 2. Selecionando o Defensor (já temos um atacante)
-                                else {
-                                    // Verifica se o território NÃO é do jogador atual
-                                    if (controlador.getJogadores().get(t.getPlayerId()-1) != controlador.getJogadorAtual()) {
-                                        Territorio territorioDefensor = t;
-                                        System.out.println("Atacando " + territorioDefensor.getNome() + " a partir de " + territorioAtacante.getNome());
-
-                                        // Manda o controlador realizar o ataque
-                                        AtaqueEstado resultado = controlador.realizarAtaque(territorioAtacante, territorioDefensor);
-                                        System.out.println("Resultado do combate: " + resultado.toString());
-
-                                        // Se conquistou, move as tropas (mock de 3)
-                                        if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
-                                            System.out.println("Território Conquistado! Movendo 3 tropas.");
-                                            controlador.moverTropasAposConquista(territorioAtacante, territorioDefensor, 3);
-                                        }
-
-                                        // Reseta a seleção
-                                        territorioAtacante = null;
-
-                                    } else {
-                                        // Clicou em outro território seu, troca o atacante
-                                        territorioAtacante = t;
-                                        System.out.println("Trocado atacante para: " + t.getNome());
-                                    }
-                                }
-                            } else if (button == Input.Buttons.RIGHT) {
-                                // Cancela a seleção de ataque
-                                territorioAtacante = null;
-                                System.out.println("Ataque cancelado.");
-                            }
-                        }
-
-                        // --- Lógica de MOVIMENTAÇÃO ---
-                        else if (fase == EstadoTurno.MOVIMENTANDO) {
-                            // (TODO: Implementar lógica de clique para movimentação)
-                        }
-
-                        return true; // Click foi processado
+                Territorio t = null;
+                for (Territorio territorio : controlador.getTerritorios()) {
+                    if (territorio.contains(worldCoords.x, worldCoords.y)) {
+                        t = territorio;
+                        break;
                     }
                 }
 
-                // Se clicou fora de todos os territórios
-                if (button == Input.Buttons.RIGHT && territorioAtacante != null) {
-                    // Cancela a seleção de ataque
-                    territorioAtacante = null;
-                    System.out.println("Ataque cancelado.");
+                if (t == null) {
+                    if (button == Input.Buttons.RIGHT) {
+                        territorioAtacante = null;
+                        territorioOrigemMovimento = null;
+                        System.out.println("Seleção cancelada.");
+                    }
+                    return false;
                 }
 
-                return false;
+                // --- Lógica de DISTRIBUIÇÃO (Sem mudança) ---
+                if (fase == EstadoTurno.DISTRIBUINDO) {
+                    if (button == Input.Buttons.LEFT) {
+                        boolean alocou = controlador.alocarTropa(t);
+                        if (alocou) {
+                            System.out.println("Alocou 1 tropa em " + t.getNome() + ". Restam: " + controlador.getTropasADistribuir());
+                        }
+                    }
+                }
+
+                // --- Lógica de ATAQUE (Atualizada) ---
+                else if (fase == EstadoTurno.ATACANDO) {
+                    if (button == Input.Buttons.LEFT) {
+                        // 1. Selecionando Atacante
+                        if (territorioAtacante == null) {
+                            if (controlador.getJogadores().get(t.getPlayerId()-1) == controlador.getJogadorAtual() && t.getTropas() > 1) {
+                                territorioAtacante = t;
+                                System.out.println("Atacante selecionado: " + t.getNome());
+                            }
+                        }
+                        // 2. Selecionando Defensor
+                        else {
+                            if (controlador.getJogadores().get(t.getPlayerId()-1) != controlador.getJogadorAtual()) {
+                                Territorio territorioDefensor = t;
+                                if (controlador.getMapa().isAdjacente(territorioAtacante, territorioDefensor)) {
+                                    System.out.println("Atacando " + territorioDefensor.getNome() + " de " + territorioAtacante.getNome());
+
+                                    AtaqueEstado resultado = controlador.realizarAtaque(territorioAtacante, territorioDefensor);
+                                    System.out.println("Resultado: " + resultado.toString());
+
+                                    if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+                                        System.out.println("Território Conquistado! Abrindo diálogo...");
+                                        mostrarDialogoMovimento(territorioAtacante, territorioDefensor, TipoMovimento.ATAQUE);
+                                    }
+                                    territorioAtacante = null; // Reseta seleção após ataque (bem-sucedido ou não)
+                                } else {
+                                    System.out.println("Ataque falhou: " + territorioDefensor.getNome() + " não é adjacente a " + territorioAtacante.getNome());
+                                    territorioAtacante = null;
+                                }
+
+                            } else {
+                                territorioAtacante = t;
+                                System.out.println("Trocado atacante para: " + t.getNome());
+                            }
+                        }
+                    } else if (button == Input.Buttons.RIGHT) {
+                        territorioAtacante = null;
+                        System.out.println("Ataque cancelado.");
+                    }
+                }
+
+                // --- Lógica de MOVIMENTAÇÃO (Atualizada) ---
+                else if (fase == EstadoTurno.MOVIMENTANDO) {
+                    if (button == Input.Buttons.LEFT) {
+                        // 1. Selecionando Origem
+                        if (territorioOrigemMovimento == null) {
+                            if (controlador.getJogadores().get(t.getPlayerId()-1) == controlador.getJogadorAtual() && t.getTropas() > 1) {
+                                territorioOrigemMovimento = t;
+                                System.out.println("Movimentação: Origem: " + t.getNome());
+                            }
+                        }
+                        // 2. Selecionando Destino
+                        else if(!(territorioOrigemMovimento.equals(t))){
+                            // --- CORREÇÃO: VERIFICAÇÕES DE ADJACÊNCIA E DONO FALTANTES ---
+
+                            // Checa se o destino também é do jogador
+                            if (t.getPlayerId()  == territorioOrigemMovimento.getPlayerId()) {
+                                // Checa se o destino é adjacente
+                                if (controlador.getMapa().isAdjacente(territorioOrigemMovimento, t)) {
+                                    System.out.println("Movimentação: Destino: " + t.getNome());
+                                    mostrarDialogoMovimento(territorioOrigemMovimento, t, TipoMovimento.ESTRATEGICO);
+                                    territorioOrigemMovimento = null; // Reseta seleção
+                                } else {
+                                    System.out.println("Movimento falhou: " + t.getNome() + " não é adjacente a " + territorioOrigemMovimento.getNome());
+                                    territorioOrigemMovimento = null; // Reseta seleção
+                                }
+                            } else {
+                                System.out.println("Movimento falhou: " + t.getNome() + " não pertence a você.");
+                                territorioOrigemMovimento = null; // Reseta seleção
+                            }
+                        }
+                    } else if (button == Input.Buttons.RIGHT) {
+                        territorioOrigemMovimento = null; // Cancela seleção
+                        System.out.println("Movimentação cancelada.");
+                    }
+                }
+                return true;
             }
         };
         // --- FIM DA CORREÇÃO ---
@@ -178,6 +202,72 @@ public class TelaDeJogo {
         TextButton btnVoltar = criarBotaoVoltar();
         stage.addActor(btnVoltar);
 
+    }
+    private void mostrarDialogoMovimento(final Territorio origem, final Territorio destino, final TipoMovimento tipo) {
+
+        // 1. Calcular o máximo de tropas que podem ser movidas
+        int maxTropas;
+
+        if (tipo == TipoMovimento.ATAQUE) {
+            // Regra Pós-Ataque: Máximo de 3 (conforme sua regra),
+            // mas não mais do que (total de tropas - 1).
+            int maxDisponivel = origem.getTropas() - 1;
+            maxTropas = Math.min(3, maxDisponivel);
+        } else {
+            // Regra Estratégica: Máximo de (tropas no início da fase).
+            // Usamos o novo getter do controlador.
+            int tropasIniciais = controlador.getTropasIniciaisMovimentacao(origem);
+            maxTropas = tropasIniciais;
+        }
+
+        // Validação: Se não pode mover nenhuma tropa, nem abre o diálogo.
+        if (maxTropas < 1) {
+            Gdx.app.log("TelaDeJogo", "Nenhuma tropa disponível para mover.");
+            // Se foi um ataque, força a mover o mínimo possível (0) se a origem ficou com 1
+            if (tipo == TipoMovimento.ATAQUE && origem.getTropas() == 1) {
+                // Ele atacou com 3, mas só tinha 3. Conquistou e ficou com 1. Não pode mover.
+                // (Regra do War diz que tem que mover no mínimo 1... isso precisa ser validado no ataque)
+                // Por enquanto, vamos assumir que o caso `maxTropas < 1` em ataque é um erro de lógica
+                // que deve ser tratado.
+            }
+            return;
+        }
+
+        // 2. Criar a UI da Subjanela
+        final Dialog dialog = new Dialog("Mover Tropas", skin);
+        dialog.setModal(true); // Escurece o fundo
+
+        String texto = (tipo == TipoMovimento.ATAQUE) ?
+            "Mover para " + destino.getNome() + " (Max: 3)" :
+            "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
+        dialog.text(texto);
+
+        // Tabela interna para organizar o Slider e o Label
+        Table content = dialog.getContentTable();
+        content.pad(20);
+        final SpinBox spinBox = new SpinBox(1, maxTropas, skin);
+
+        content.row();
+        content.add(spinBox); // Adiciona o widget SpinBox
+
+        // 3. Botão de Confirmação
+        TextButton btnConfirmar = new TextButton("Confirmar", skin);
+        btnConfirmar.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                int tropasParaMover = spinBox.getValue();
+                // Chama o método correto do controlador
+                if (tipo == TipoMovimento.ATAQUE) {
+                    controlador.moverTropasAposConquista(origem, destino, tropasParaMover);
+                } else {
+                    controlador.moverTropasEstrategicas(origem, destino, tropasParaMover);
+                }
+                dialog.hide(); // Fecha o diálogo
+            }
+        });
+
+        dialog.button(btnConfirmar); // Adiciona o botão
+        dialog.show(stage); // Exibe a subjanela
     }
     private void buildUIStage() {
         // Tabela principal (bottom-aligned)
@@ -219,6 +309,8 @@ public class TelaDeJogo {
         btnProximaFase.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
+                territorioAtacante = null;
+                territorioOrigemMovimento = null;
                 controlador.proximaFaseTurno();
             }
         });
@@ -307,18 +399,9 @@ public class TelaDeJogo {
         stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(),
             stage.getViewport().getWorldHeight());
         stage.getBatch().end();
-
-        Jogador jogadorAtual = controlador.getJogadorAtual();
-        if (jogadorAtual != null) {
-            // (Assumindo que Jogador tem .getCor() e CorJogador tem .getGdxColor())
-            Color cor = jogadorAtual.getCor().getGdxColor();
-            btnProximaFase.setColor(cor);
-        } else {
-            btnProximaFase.setColor(Color.WHITE); // Cor padrão se algo der errado
-        }
         // atualiza e desenha a UI (Botão Voltar)
-        stage.act(delta);
-        stage.draw();
+
+
 
         // desenha os territórios preenchidos
         shapeRenderer.setProjectionMatrix(stage.getCamera().combined);
@@ -373,9 +456,11 @@ public class TelaDeJogo {
         for (Territorio t : controlador.getTerritorios()) {
             t.desenharTexto(font, stage.getBatch()); // Agora lê as tropas atualizadas
         }
-        //desenhaUI
-        atualizarUI();
         stage.getBatch().end();
+        //desenhaUI
+        stage.act(delta);
+        stage.draw();
+        atualizarUI();
     }
 
 
