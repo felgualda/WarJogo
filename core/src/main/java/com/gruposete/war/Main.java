@@ -35,39 +35,55 @@ public class Main extends ApplicationAdapter {
         // Ela será criada sob demanda (quando o jogo iniciar)
         // pois depende dos dados do setup.
 
+        // --- Lógica de setup movida para os callbacks da TelaDeSelecao ---
+
+        // 1. Criamos os callbacks para a nova TelaDeSelecao.
+        // O 'iniciarJogoCallback' contém a lógica de setup que antes estava no 'jogarCallback' da TelaInicial.
+        Runnable iniciarJogoCallback = () -> {
+            // Pega a lista de jogadores da tela de seleção (não é mais uma simulação)
+            List<Jogador> jogadores = telaDeSelecao.getJogadoresSelecionados();
+
+            // Roda a lógica de Setup para preparar a partida
+            SetupPartida setup = new SetupPartida(jogadores);
+            List<Jogador> jogadoresProntos = setup.getJogadoresPreparados();
+            Array<Territorio> territoriosProntos = setup.getTodosOsTerritorios();
+            Mapa mapaAdjacenciaPronto = setup.getMapaAdjacencias(); // (Esta linha já estava no seu commit)
+
+            // Cria tela de jogo com callback para voltar ao menu
+            Runnable voltarCallback = () -> {
+                telaAtual = TelaAtiva.INICIAL;
+                Gdx.input.setInputProcessor(telaInicial.stage);
+                // Descarta a tela de jogo antiga para liberar memória
+                if (telaDeJogo != null) {
+                    telaDeJogo.dispose();
+                    telaDeJogo = null;
+                }
+            };
+
+            // Cria a nova TelaDeJogo com os dados prontos (incluindo o mapa do seu commit)
+            telaDeJogo = new TelaDeJogo(voltarCallback, jogadoresProntos, territoriosProntos, mapaAdjacenciaPronto);
+
+            // Muda o estado do jogo
+            telaAtual = TelaAtiva.JOGO;
+            Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
+        };
+
+        // Callback para a TelaDeSelecao Voltar para a Inicial
+        Runnable voltarParaInicialCallback = () -> {
+            telaAtual = TelaAtiva.INICIAL;
+            Gdx.input.setInputProcessor(telaInicial.stage);
+        };
+
+        // 2. Instanciamos a telaDeSelecao (antes estava null)
+        telaDeSelecao = new TelaDeSelecaoDeJogadores(voltarParaInicialCallback, iniciarJogoCallback);
+
         // Cria tela inicial com callback para iniciar o jogo
         telaInicial = new TelaInicial(
             () -> { // Callback "Iniciar Jogo"
-                // (SIMULAÇÃO) Cria a lista de jogadores.
-                // No futuro, isso virá de uma Tela De Setup.
-                List<Jogador> jogadores = new ArrayList<>();
-                jogadores.add(new Jogador("Jogador 1", CorJogador.VERMELHO));
-                jogadores.add(new Jogador("Jogador 2", CorJogador.AZUL));
-                jogadores.add(new Jogador("Jogador 3", CorJogador.VERDE));
-
-                // Roda a lógica de Setup para preparar a partida
-                SetupPartida setup = new SetupPartida(jogadores);
-                List<Jogador> jogadoresProntos = setup.getJogadoresPreparados();
-                Array<Territorio> territoriosProntos = setup.getTodosOsTerritorios();
-                Mapa mapaAdjacenciaPronto = setup.getMapaAdjacencias();
-
-                // Cria tela de jogo com callback para voltar ao menu
-                Runnable voltarCallback = () -> {
-                    telaAtual = TelaAtiva.INICIAL;
-                    Gdx.input.setInputProcessor(telaInicial.stage);
-                    // Descarta a tela de jogo antiga para liberar memória
-                    if (telaDeJogo != null) {
-                        telaDeJogo.dispose();
-                        telaDeJogo = null;
-                    }
-                };
-
-                // Cria a nova TelaDeJogo com os dados prontos
-                telaDeJogo = new TelaDeJogo(voltarCallback, jogadoresProntos, territoriosProntos, mapaAdjacenciaPronto);
-
-                // Muda o estado do jogo
-                telaAtual = TelaAtiva.JOGO;
-                Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
+                // Agora, o botão "Jogar" apenas navega para a TelaDeSelecao.
+                telaDeSelecao.resetarEstado();
+                telaAtual = TelaAtiva.SELECAO;
+                Gdx.input.setInputProcessor(telaDeSelecao.stage);
             },
             () -> { // Callback "Regras"
                 telaAtual = TelaAtiva.REGRAS;
@@ -101,15 +117,21 @@ public class Main extends ApplicationAdapter {
             case INICIAL:
                 telaInicial.render(delta);
                 break;
+            // --- MUDANÇA AQUI ---
+            // Adicionado o 'case' para renderizar a nova tela de seleção
+            case SELECAO:
+                telaDeSelecao.render(delta);
+                break;
+            // --- FIM DA MUDANÇA ---
             case JOGO:
                 // Adicionada checagem para evitar crash, pois telaDeJogo pode ser null
                 if (telaDeJogo != null) {
                     telaDeJogo.render(delta);
                 }
                 break;
-                case REGRAS:
-                    telaDeRegras.render(delta);
-                    break;
+            case REGRAS:
+                telaDeRegras.render(delta);
+                break;
             case CONFIG:
                 telaDeConfig.render(delta);
                 break;
@@ -119,6 +141,10 @@ public class Main extends ApplicationAdapter {
     @Override
     public void resize(int width, int height) {
         telaInicial.resize(width, height);
+        // --- MUDANÇA AQUI ---
+        // Adicionado o resize para a tela de seleção (com checagem de null)
+        if (telaDeSelecao != null) telaDeSelecao.resize(width, height);
+        // --- FIM DA MUDANÇA ---
         // Adicionada checagem para evitar crash
         if (telaDeJogo != null) telaDeJogo.resize(width, height);
         telaDeRegras.resize(width, height);
@@ -128,6 +154,10 @@ public class Main extends ApplicationAdapter {
     @Override
     public void dispose() {
         telaInicial.dispose();
+        // --- MUDANÇA AQUI ---
+        // Adicionado o dispose para a tela de seleção (com checagem de null)
+        if (telaDeSelecao != null) telaDeSelecao.dispose();
+        // --- FIM DA MUDANÇA ---
         // Adicionada checagem para evitar crash
         if (telaDeJogo != null) telaDeJogo.dispose();
         telaDeRegras.dispose();
