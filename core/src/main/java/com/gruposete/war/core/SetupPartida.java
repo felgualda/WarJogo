@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Array;
 
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.Territorio;
+import com.gruposete.war.core.Objetivo.TipoDeObjetivo;
 import com.gruposete.war.core.Mapa;
 import com.gruposete.war.core.Objetivo;
 import com.gruposete.war.core.CorJogador;
@@ -41,15 +42,25 @@ public class SetupPartida {
         // Gera o mapa de adjacencias
         this.mapaAdjacencias = new Mapa(todosOsTerritorios);
 
-        // Carrega Deck de Objetivos 
+        // Carrega Deck de Objetivos
         this.deckDeObjetivos = new ArrayList<>();
-        // Temporário
-        this.deckDeObjetivos.add(new Objetivo(1, "Conquistar a America do Sul", "path/obj1.png"));
-        this.deckDeObjetivos.add(new Objetivo(2, "Destruir o jogador AZUL", "path/obj2.png"));
-        this.deckDeObjetivos.add(new Objetivo(3, "Conquistar 24 territorios", "path/obj3.png"));
-        this.deckDeObjetivos.add(new Objetivo(4, "Conquistar a Asia", "path/obj4.png"));
-        this.deckDeObjetivos.add(new Objetivo(5, "Conquistar a Europa", "path/obj5.png"));
-        this.deckDeObjetivos.add(new Objetivo(6, "Destruir o jogador VERMELHO", "path/obj6.png"));
+        // ADD Objetivos de conquista de Continentes
+        this.deckDeObjetivos.add(new Objetivo(1, "Conquistar na Totalidade a AMÉRICA DO NORTE e a ÁFRICA", "assets\\Carta\\53.png", new String[]{"América do Norte", "África"}));
+        this.deckDeObjetivos.add(new Objetivo(2, "Conquistar na Totalidade a ÁSIA e a ÁFRICA", "assets\\Carta\\54.png", new String[]{"Ásia", "África"}));
+        this.deckDeObjetivos.add(new Objetivo(3, "Conquistar na Totalidade a AMÉRICA DO NORTE e a OCEANIA", "assets\\Carta\\55.png", new String[]{"América do Norte", "Oceania"}));
+        this.deckDeObjetivos.add(new Objetivo(4, "Conquistar na Totalidade a AMÉRICA DO SUL e a ÁSIA", "assets\\Carta\\56.png", new String[]{"América do Sul", "Ásia"}));
+        this.deckDeObjetivos.add(new Objetivo(5, "Conquistar na Totalidade a AMÉRICA DO SUL, A EUROPA e mais um terceiro continente à sua escolha", "assets\\Carta\\57.png", new String[]{"América do Sul", "Europa", "*"}));
+        this.deckDeObjetivos.add(new Objetivo(6, "Conquistar na Totalidade a EUROPA e a OCEANIA e mais um terceiro continente à sua escolha", "assets\\Carta\\58.png", new String[]{"Europa", "Oceania", "*"}));
+        // ADD Objetivos de Destruir Jogadores
+        int idObjetivos = 7;
+        for (Jogador j : this.jogadores) {
+            this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Destruir totalmente o JOGADOR " + j.getCor() + ", se o jogador que os possui for eliminado por outro jogador, o seu objetivo passa automáticamente a ser: CONQUISTAR 24 TERRIÓRIOS", "assets\\Carta\\45.png", j.getCor()));
+            idObjetivos++;
+        }
+        // ADD Objetivos de Conquistar Territórios
+        this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Conquistar 24 territorios", "assets\\Carta\\51.png", 24));
+        idObjetivos++;
+        this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Conquistar 24 territorios", "assets\\Carta\\52.png", 18));
 
         System.out.println("SETUP: Cartas de objetivo (reais) carregadas.");
     }
@@ -94,9 +105,25 @@ public class SetupPartida {
             
             // Pega um Objetivo 
             Objetivo objetivoSorteado = this.deckDeObjetivos.remove(0);
+
+            // Verificação para que um jogador não receba um Objetivo de eliminar a sí mesmo
+            if (objetivoSorteado.getTipo() == TipoDeObjetivo.ELIMINAR_JOGAOR && objetivoSorteado.getCorJogadorAlvo() == jogador.getCor()){
+                if (this.deckDeObjetivos.isEmpty()) {
+                    System.err.println("ERRO DE SETUP: Jogador foi sorteado com um Objetivo para eliminar a sí mesmo e não há mais cartas de objetivo suficientes!"); 
+                    break;
+                }
+                
+                Objetivo novoObjetivo = this.deckDeObjetivos.remove(0);
+                jogador.setObjetivo(novoObjetivo);
+
+                this.deckDeObjetivos.add(objetivoSorteado);
+            }
+            else{
+                // Entrega o objetivo ao jogador 
+                jogador.setObjetivo(objetivoSorteado);
+            }
             
-            // Entrega o objetivo ao jogador 
-            jogador.setObjetivo(objetivoSorteado);
+            
         }
     }
 
