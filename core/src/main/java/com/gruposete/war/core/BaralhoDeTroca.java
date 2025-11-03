@@ -70,12 +70,12 @@ public class BaralhoDeTroca {
     private static final CardData[] TERRITORY_MAP = {
         // Europa
         new CardData(3, "Alemanha", 'C'),
-        new CardData(4, "Franca", 'Q'),
+        new CardData(4, "França", 'Q'),
         new CardData(5, "Inglaterra", 'C'),
-        new CardData(6, "Islandia", 'T'), // (Ajuste "Islândia" se o nome no Territorio.java tiver acento)
+        new CardData(6, "Islândia", 'T'), // (Ajuste "Islândia" se o nome no Territorio.java tiver acento)
         new CardData(7, "Moscou", 'T'),
-        new CardData(8, "Polonia", 'Q'), // (Ajuste "Polônia")
-        new CardData(9, "Suecia", 'C'), // (Ajuste "Suécia")
+        new CardData(8, "Polônia", 'Q'), // (Ajuste "Polônia")
+        new CardData(9, "Suécia", 'C'), // (Ajuste "Suécia")
         // América do Sul
         new CardData(10, "Argentina", 'Q'),
         new CardData(11, "Brasil", 'C'),
@@ -87,16 +87,16 @@ public class BaralhoDeTroca {
         new CardData(16, "Congo", 'Q'),
         new CardData(17, "Egito", 'T'),
         new CardData(18, "Madagascar", 'C'),
-        new CardData(19, "Sudao", 'Q'), // (Ajuste "Sudão")
+        new CardData(19, "Sudão", 'Q'), // (Ajuste "Sudão")
         // Oceania
         new CardData(20, "Australia", 'T'), // (Ajuste "Austrália")
         new CardData(21, "Borneo", 'Q'),
-        new CardData(22, "Nova Guine", 'C'), // (Ajuste "Nova Guiné")
+        new CardData(22, "Nova Guiné", 'C'), // (Ajuste "Nova Guiné")
         new CardData(23, "Sumatra", 'Q'),
         // América do Norte
         new CardData(24, "Alasca", 'T'),
         new CardData(25, "California", 'Q'), // (Ajuste "Califórnia")
-        new CardData(26, "Groenlandia", 'C'), // (Ajuste "Groenlândia")
+        new CardData(26, "Groenlândia", 'C'), // (Ajuste "Groenlândia")
         new CardData(27, "Labrador", 'Q'),
         new CardData(28, "Mackenzie", 'C'),
         new CardData(29, "Mexico", 'Q'), // (Ajuste "México")
@@ -108,14 +108,14 @@ public class BaralhoDeTroca {
         new CardData(34, "China", 'C'),
         new CardData(35, "Dudinka", 'C'),
         new CardData(36, "India", 'Q'), // (Ajuste "índia")
-        new CardData(37, "Mongolia", 'C'), // (Ajuste "Mongólia")
+        new CardData(37, "Mongólia", 'C'), // (Ajuste "Mongólia")
         new CardData(38, "Omsk", 'Q'),
-        new CardData(39, "Oriente Medio", 'Q'), // (Ajuste "Oriente Médio")
-        new CardData(40, "Siberia", 'T'), // (Ajuste "Sibéria")
+        new CardData(39, "Oriente Médio", 'Q'), // (Ajuste "Oriente Médio")
+        new CardData(40, "Sibéria", 'T'), // (Ajuste "Sibéria")
         new CardData(41, "Tchita", 'T'),
-        new CardData(42, "Vietna", 'T'), // (Ajuste "Vietnã")
-        new CardData(43, "Vladivostok", 'C'),
-        new CardData(44, "Japao", 'T') // (Ajuste "Japão")
+        new CardData(42, "Vietnã", 'T'), // (Ajuste "Vietnã")
+        new CardData(43, "Vladvostok", 'C'),
+        new CardData(44, "Japão", 'T') // (Ajuste "Japão")
     };
 
     // --- FIM DA ESTRUTURA DE MAPEAMENTO ---
