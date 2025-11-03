@@ -107,16 +107,31 @@ public class ControladorDePartida {
         // Por enquanto, damos 5 tropas de bônus para teste.
         this.tropasADistribuir = 5;
     }
-    public boolean alocarTropa(Territorio territorio) {
-        if (this.estadoTurno != EstadoTurno.DISTRIBUINDO ||
-            this.tropasADistribuir <= 0 ||
-            territorio.getPlayerId()-1 != jogadores.indexOf(this.jogadorAtual))
-        {
-            return false; // Não pode alocar
+    public boolean alocarTropas(Territorio territorio, int quantidade) {
+        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
+
+        // Validação
+        if (this.estadoTurno != EstadoTurno.DISTRIBUINDO) {
+            Gdx.app.log("Controlador", "Alocação falhou: Não está na fase de distribuição.");
+            return false;
+        }
+        if (territorio.getPlayerId() - 1 != indiceJogador) {
+            Gdx.app.log("Controlador", "Alocação falhou: Território não é seu.");
+            return false;
+        }
+        if (quantidade > this.tropasADistribuir) {
+            Gdx.app.log("Controlador", "Alocação falhou: Tropas insuficientes.");
+            return false; // Não tem tropas suficientes
+        }
+        if (quantidade < 1) {
+            Gdx.app.log("Controlador", "Alocação falhou: Mínimo 1.");
+            return false; // Mínimo de 1
         }
 
-        territorio.setTropas(territorio.getTropas() + 1);
-        this.tropasADistribuir--;
+        // Sucesso
+        Gdx.app.log("Controlador", "Alocando " + quantidade + " tropas em " + territorio.getNome());
+        territorio.setTropas(territorio.getTropas() + quantidade);
+        this.tropasADistribuir -= quantidade;
         return true;
     }
     /**
@@ -201,7 +216,7 @@ public class ControladorDePartida {
             tropasIniciais = origem.getTropas();
         }
 
-        // O máximo que ele pode mover é o que tinha no início, menos 1
+        // O máximo que ele pode mover é o que tinha no início
         int tropasDisponiveisParaMoverDoSnapshot = tropasIniciais;
 
         if (tropasParaMover > tropasDisponiveisParaMoverDoSnapshot) {
@@ -224,12 +239,11 @@ public class ControladorDePartida {
         origem.setTropas(origem.getTropas() - tropasParaMover);
         destino.setTropas(destino.getTropas() + tropasParaMover);
 
-        // 2. ATUALIZA O SNAPSHOT (A sua regra)
         // Reduz o "crédito" de movimentação daquele território
         int novoLimite = tropasIniciais - tropasParaMover;
         tropasInicioMovimentacao.put(origem, novoLimite);
 
-        Gdx.app.log("Controlador", "Mov. Estratégico feito. Limite de " + origem.getNome() + " agora é " + (novoLimite - 1));
+        Gdx.app.log("Controlador", "Mov. Estratégico feito. Limite de " + origem.getNome() + " agora é " + (novoLimite ));
 
         // 3. REMOVE o 'passarAVez()'
         // O jogador agora pode fazer mais movimentos ou clicar em "Encerrar Turno".

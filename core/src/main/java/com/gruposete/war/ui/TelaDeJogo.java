@@ -82,9 +82,11 @@ public class TelaDeJogo {
                 // --- Lógica de DISTRIBUIÇÃO (Sem mudança) ---
                 if (fase == EstadoTurno.DISTRIBUINDO) {
                     if (button == Input.Buttons.LEFT) {
-                        boolean alocou = controlador.alocarTropa(t);
-                        if (alocou) {
-                            System.out.println("Alocou 1 tropa em " + t.getNome() + ". Restam: " + controlador.getTropasADistribuir());
+                        // Valida se o território é do jogador ANTES de abrir o diálogo
+                        if (t.getPlayerId() - 1 == controlador.getJogadores().indexOf(controlador.getJogadorAtual())) {
+                            mostrarDialogoMovimento(t, null, TipoMovimento.DISTRIBUICAO);
+                        } else {
+                            System.out.println("Este território não é seu.");
                         }
                     }
                 }
@@ -205,69 +207,71 @@ public class TelaDeJogo {
     }
     private void mostrarDialogoMovimento(final Territorio origem, final Territorio destino, final TipoMovimento tipo) {
 
-        // 1. Calcular o máximo de tropas que podem ser movidas
+        // 1. Calcular o máximo de tropas e textos
         int maxTropas;
+        String titulo;
+        String textoDialogo;
+        int minTropas = 0; // Mínimo a mover/alocar
 
         if (tipo == TipoMovimento.ATAQUE) {
-            // Regra Pós-Ataque: Máximo de 3 (conforme sua regra),
-            // mas não mais do que (total de tropas - 1).
+            minTropas = 1;
+            titulo = "Mover Tropas (Conquista)";
             int maxDisponivel = origem.getTropas() - 1;
-            maxTropas = Math.min(3, maxDisponivel);
-        } else {
-            // Regra Estratégica: Máximo de (tropas no início da fase).
-            // Usamos o novo getter do controlador.
+            maxTropas = Math.min(3, maxDisponivel); // Sua regra de 3
+            textoDialogo = "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
+        }
+        else if (tipo == TipoMovimento.ESTRATEGICO) {
+            titulo = "Mover Tropas (Estratégico)";
             int tropasIniciais = controlador.getTropasIniciaisMovimentacao(origem);
-            maxTropas = tropasIniciais;
+            maxTropas = tropasIniciais - 1;
+            textoDialogo = "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
+        }
+        else { // NOVO TIPO: DISTRIBUICAO
+            titulo = "Alocar Tropas";
+            maxTropas = controlador.getTropasADistribuir(); // O limite é o que o jogador tem
+            textoDialogo = "Alocar em " + origem.getNome() + " (Max: " + maxTropas + ")";
         }
 
-        // Validação: Se não pode mover nenhuma tropa, nem abre o diálogo.
+        // Validação: Se não pode mover/alocar, nem abre o diálogo.
         if (maxTropas < 1) {
-            Gdx.app.log("TelaDeJogo", "Nenhuma tropa disponível para mover.");
-            // Se foi um ataque, força a mover o mínimo possível (0) se a origem ficou com 1
-            if (tipo == TipoMovimento.ATAQUE && origem.getTropas() == 1) {
-                // Ele atacou com 3, mas só tinha 3. Conquistou e ficou com 1. Não pode mover.
-                // (Regra do War diz que tem que mover no mínimo 1... isso precisa ser validado no ataque)
-                // Por enquanto, vamos assumir que o caso `maxTropas < 1` em ataque é um erro de lógica
-                // que deve ser tratado.
-            }
+            Gdx.app.log("TelaDeJogo", "Nenhuma tropa disponível para esta ação.");
             return;
         }
 
         // 2. Criar a UI da Subjanela
-        final Dialog dialog = new Dialog("Mover Tropas", skin);
-        dialog.setModal(true); // Escurece o fundo
+        final Dialog dialog = new Dialog(titulo, skin);
+        dialog.setModal(true);
+        dialog.text(textoDialogo);
 
-        String texto = (tipo == TipoMovimento.ATAQUE) ?
-            "Mover para " + destino.getNome() + " (Max: 3)" :
-            "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
-        dialog.text(texto);
-
-        // Tabela interna para organizar o Slider e o Label
         Table content = dialog.getContentTable();
         content.pad(20);
-        final SpinBox spinBox = new SpinBox(1, maxTropas, skin);
+
+        final SpinBox spinBox = new SpinBox(minTropas, maxTropas, skin);
 
         content.row();
-        content.add(spinBox); // Adiciona o widget SpinBox
+        content.add(spinBox);
 
         // 3. Botão de Confirmação
         TextButton btnConfirmar = new TextButton("Confirmar", skin);
         btnConfirmar.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                int tropasParaMover = spinBox.getValue();
+                int quantidade = spinBox.getValue();
+
                 // Chama o método correto do controlador
                 if (tipo == TipoMovimento.ATAQUE) {
-                    controlador.moverTropasAposConquista(origem, destino, tropasParaMover);
-                } else {
-                    controlador.moverTropasEstrategicas(origem, destino, tropasParaMover);
+                    controlador.moverTropasAposConquista(origem, destino, quantidade);
+                } else if (tipo == TipoMovimento.ESTRATEGICO) {
+                    controlador.moverTropasEstrategicas(origem, destino, quantidade);
+                } else { // NOVO TIPO
+                    controlador.alocarTropas(origem, quantidade);
                 }
-                dialog.hide(); // Fecha o diálogo
+                dialog.hide();
             }
         });
 
-        dialog.button(btnConfirmar); // Adiciona o botão
-        dialog.show(stage); // Exibe a subjanela
+        dialog.button(btnConfirmar);
+        dialog.show(stage); // (Corrigido para usar o 'stage' único)
     }
     private void buildUIStage() {
         // Tabela principal (bottom-aligned)
