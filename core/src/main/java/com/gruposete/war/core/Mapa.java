@@ -264,6 +264,7 @@ public class Mapa {
 
         Array<Territorio> moscouAdj = new Array<>();
         moscouAdj.add(tNomes.get("Suécia"));
+        alemanhaAdj.add(tNomes.get("Polônia"));
         moscouAdj.add(tNomes.get("Aral"));
         moscouAdj.add(tNomes.get("Omsk"));
         moscouAdj.add(tNomes.get("Oriente Médio"));

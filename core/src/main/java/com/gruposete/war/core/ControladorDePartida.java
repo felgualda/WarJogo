@@ -1,13 +1,11 @@
 package com.gruposete.war.core; // Ajuste o pacote se necessário
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.utils.Array;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.gruposete.war.core.ServicoDeReforco;
-// import java.util.Random; // Não é mais necessário, AtaqueLogica tem o seu
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Array;
 
 /**
  * Gerencia o estado da partida, fluxo de turnos e regras do jogo.
@@ -20,11 +18,13 @@ public class ControladorDePartida {
     private Array<Territorio> territorios;
     private Mapa mapa;
     private SetupPartida setupLogic;
+    private VerificadorObjetivos verificadorObjetivos;
 
     private int indiceJogadorAtual;
     private Jogador jogadorAtual;
     private int tropasADistribuir;
     private Map<Territorio, Integer> tropasInicioMovimentacao = new HashMap<>();
+    private Map<Jogador, Jogador> historicoDeEliminacoes = new HashMap<>();     // Armazena o historico de jogadores eliminados e seus eliminadores <Jogador Elminado, Jogador Eliminador>
     // --- Estado do Turno ---
     public enum EstadoTurno {
         DISTRIBUINDO,
@@ -56,6 +56,9 @@ public class ControladorDePartida {
 
         BaralhoDeTroca.getInstance().inicializarBaralho(this.territorios);
 
+        // Inicializa a classe que faz a verificação de Objetivos
+        this.verificadorObjetivos = new VerificadorObjetivos(this.jogadores, this.territorios, this);
+
         this.indiceJogadorAtual = 0;
         this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
 
@@ -63,6 +66,8 @@ public class ControladorDePartida {
         this.conquistouTerritorioNesteTurno = false;
 
         calcularTropasDoTurno();
+        // DEBUG: usado apenas para verificação RETIRAR DA IMPLEMENTAÇÂO FINAL
+        imprimirObjetivosJogadores();
     }
 
     // --- LÓGICA DE FLUXO DE JOGO ---
@@ -194,8 +199,13 @@ public class ControladorDePartida {
 
         // c) O território defensor foi eliminado? (RF13c e RF22)
         if (jogadorDefensor.getTerritorios().isEmpty()) {
+            Gdx.app.log("Controlador", "JOGADOR ELIMINADO: " + jogadorDefensor.getNome() + " por " + this.jogadorAtual.getNome());
             // Se o jogador foi eliminado, a lógica de RF22 deve ser acionada (transferência de cartas).
             // A lógica real deve ser implementada em um serviço: ServicoDeVitoria.processarEliminacao(jogadorAtacante, jogadorDefensor);
+
+            // Se o jogador foi eliminado, a lógica de RF13 deve ser acionada (conquista de objetivo).
+            historicoDeEliminacoes.put(jogadorDefensor, this.jogadorAtual);
+            atualizarObjetivosAposEliminacao(jogadorDefensor, this.jogadorAtual);
         }
 
         // A AtaqueLogica já atualizou o PlayerId e a cor no Território.
@@ -205,6 +215,7 @@ public class ControladorDePartida {
     
     // 5. Verificar condição de vitória (RF13) - Deve ser feito pelo Controlador após cada conquista.
     // this.verificarVitoria(this.jogadorAtual);
+    this.verificarVitoria();
 
     return resultado; // Retorna o enum
 }
@@ -317,6 +328,38 @@ public class ControladorDePartida {
         }
     }
 
+    // Métodos relacionados à Verificação de Objetivos
+    public Jogador getEliminadorDe(Jogador jogadorEliminado){
+        return historicoDeEliminacoes.get(jogadorEliminado);
+    }
+
+    // Verifica todos os objetivos para checar se precisam ser atualizados (Alvo eliminado por outro jogador)
+    public void atualizarObjetivosAposEliminacao(Jogador eliminado, Jogador eliminador){
+        for (Jogador jogador : this.jogadores){
+            Objetivo objetivo = jogador.getObjetivo();
+
+            // Compara o objetivo de cada jogador com a cor do jogador eliminado
+            if (objetivo.getTipo() == Objetivo.TipoDeObjetivo.ELIMINAR_JOGAOR && objetivo.getCorJogadorAlvo() == eliminado.getCor()){
+
+                // Se o alvo do Jogador tiver sido eliminado por outro jogador mude o objetivo
+                if (jogador != eliminado){
+                    Gdx.app.log("Controlador", "MUDANDO OBJETIVO: " + jogador.getNome() + " perdeu alvo " + eliminado.getNome());
+                    Objetivo novoObjetivo = new Objetivo(99, "Conquistar 24 territorios", "assets\\Carta\\52.png", 24);
+                    jogador.setObjetivo(novoObjetivo);
+                }
+            }
+
+        }
+    }
+
+    // Verifica as condições de vitória de todos os jogadores
+    public Jogador verificarVitoria() {
+        Jogador vencedor = verificadorObjetivos.verificarTodosObjetivos();
+        if (vencedor != null) {
+            Gdx.app.log("Controlador", "🎉 VITÓRIA! Jogador " + vencedor.getNome() + " cumpriu objetivo: " + vencedor.getObjetivo().getDescricao());
+        }
+        return vencedor;
+    }
 
     // --- GETTERS (Para a TelaDeJogo ler o estado) ---
     public int getTropasIniciaisMovimentacao(Territorio t) {
@@ -330,4 +373,19 @@ public class ControladorDePartida {
     public int getTropasADistribuir() { return tropasADistribuir; }
     // A classe interna 'ResultadoCombate' foi removida pois é desnecessária.
     // A TelaDeJogo deve reagir ao 'AtaqueEstado' retornado por 'realizarAtaque'.
+
+    // ✅ MÉTODO PARA IMPRIMIR OBJETIVOS (útil para testes)
+    public void imprimirObjetivosJogadores() {
+        System.out.println("\n=== OBJETIVOS DOS JOGADORES ===");
+        for (Jogador jogador : jogadores) {
+            Objetivo objetivo = jogador.getObjetivo();
+            if (objetivo != null) {
+                System.out.println("🎯 " + jogador.getNome() + " (" + jogador.getCor() + "): " + 
+                                 objetivo.getDescricao());
+            } else {
+                System.out.println("❌ " + jogador.getNome() + ": SEM OBJETIVO");
+            }
+        }
+        System.out.println("===============================\n");
+    }
 }

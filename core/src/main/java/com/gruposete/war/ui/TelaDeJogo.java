@@ -393,14 +393,7 @@ public class TelaDeJogo {
         return btnVoltar;
     }
 
-    // Método usado para verificar dentre todos os Objetivos se algum foi concluído
-    /*public void verificarVitoria() {
-        Jogador vencedor = verificadorObjetivos.verificarTodosObjetivos();
-        if (vencedor != null) {
-            System.out.println("JOGADOR VENCEU: " + vencedor.getNome());
-            // Aqui você pode mostrar uma tela de vitória, etc.
-        }
-    }*/
+    
 
     public void render(float delta) {
         // limpa a tela

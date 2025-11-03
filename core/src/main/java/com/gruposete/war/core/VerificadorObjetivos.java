@@ -4,6 +4,7 @@ package com.gruposete.war.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
 
 /**
@@ -17,10 +18,12 @@ import com.badlogic.gdx.utils.Array;
 public class VerificadorObjetivos {
     private List<Jogador> jogadores;
     private Array<Territorio> territorios;
+    private ControladorDePartida controlador; // Integração com o Controlador
     
-    public VerificadorObjetivos(List<Jogador> jogadores, Array<Territorio> territorios) {
+    public VerificadorObjetivos(List<Jogador> jogadores, Array<Territorio> territorios, ControladorDePartida controlador) {
         this.jogadores = jogadores;
         this.territorios = territorios;
+        this.controlador = controlador;
     }
 
     // Método para verificar se o jogador já completou seu próprio Objetivo
@@ -29,14 +32,13 @@ public class VerificadorObjetivos {
 
         switch (objetivo.getTipo()) {
             case ELIMINAR_JOGAOR:
-                return verficarEliminacaoJogador(objetivo.getCorJogadorAlvo());
+                return verficarEliminacaoJogador(jogador, objetivo.getCorJogadorAlvo());
             case CONQUISTAR_CONTINENTE:
                 return verificarConquistaContinente(jogador, objetivo.getContinentesAlvo());
             case CONQUISTAR_TERRITORIOS:
                 return verificarConquistarTerritorios(jogador, objetivo.getQtdTerritoriosAlvo());
             default:
-
-                System.out.println("ERRO: Não foi possível verificar o tipo do Objetivo.");
+                Gdx.app.log("Verificador de Objetivos", "Não foi possível verificar o tipo do Objetivo.");
                 break;
         }
 
@@ -141,17 +143,30 @@ public class VerificadorObjetivos {
         return territoriosConquistadosNoContinente == territoriosNoContinente && territoriosNoContinente > 0;
     }
 
-    // PRECISA FAZER INTEGRAÇÂO COM ControladorDePartida
-    // Atualmente apenas verifica se o alvo morreu, não se foi morto pelo Jogador.
-    private boolean verficarEliminacaoJogador(CorJogador corJogadorAlvo) {
+    // Agora Verifica corretamente se o alvo foi eliminado pelo jogador ou não
+    private boolean verficarEliminacaoJogador(Jogador jogadorAtual, CorJogador corJogadorAlvo) {
+        Jogador jogadorAlvo = null;
+
 
         for (Jogador j : this.jogadores){
-            if (j.getCor() == corJogadorAlvo && j.getTerritorios().isEmpty()) {
-                return true;
+            if (j.getCor() == corJogadorAlvo) {
+                jogadorAlvo = j;
+                break;
             }
         }
 
-        return false;
+        // Se o alvo não foi eliminado retorna false
+        if (jogadorAlvo == null || !jogadorAlvo.getTerritorios().isEmpty()){
+            return false;
+        }
+
+        // Verificar se o jogador atual foi quem eliminou o jogador alvo
+        Jogador eliminador = controlador.getEliminadorDe(jogadorAlvo);
+        boolean foiEliminador = (eliminador == jogadorAtual);
+
+
+
+        return foiEliminador;
     }
 
     // Verificar o Objetivo de todos os jogadores de uma só vez.

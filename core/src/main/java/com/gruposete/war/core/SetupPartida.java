@@ -60,7 +60,7 @@ public class SetupPartida {
         // ADD Objetivos de Conquistar Territórios
         this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Conquistar 24 territorios", "assets\\Carta\\51.png", 24));
         idObjetivos++;
-        this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Conquistar 24 territorios", "assets\\Carta\\52.png", 18));
+        this.deckDeObjetivos.add(new Objetivo(idObjetivos, "Conquistar 18 territorios e ocupar cada um deles com pelo menos 2 exércitos", "assets\\Carta\\52.png", 18));
 
         System.out.println("SETUP: Cartas de objetivo (reais) carregadas.");
     }
