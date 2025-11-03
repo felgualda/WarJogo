@@ -53,6 +53,8 @@ public class ControladorDePartida {
         this.territorios = setupLogic.getTodosOsTerritorios();
         this.mapa = setupLogic.getMapaAdjacencias();
 
+        BaralhoDeTroca.getInstance().inicializarBaralho(this.territorios);
+
         this.indiceJogadorAtual = 0;
         this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
 
@@ -255,8 +257,15 @@ public class ControladorDePartida {
      * Adiciona uma carta (mock) ao jogador atual.
      */
     private void darCartaAoJogadorAtual() {
-        Carta novaCarta = new Carta(1, "Cartas/1.png"); // Mock
-        this.jogadorAtual.getCartas().add(novaCarta);
+        // Pega a instância do singleton e compra uma carta
+        Carta novaCarta = BaralhoDeTroca.getInstance().comprarCarta();
+
+        if (novaCarta != null) {
+            this.jogadorAtual.getCartas().add(novaCarta);
+            Gdx.app.log("Controlador", jogadorAtual.getNome() + " comprou a carta: " + novaCarta.getSimbolo());
+        } else {
+            Gdx.app.error("Controlador", "Falha ao comprar carta. O baralho está vazio?");
+        }
     }
 
 
