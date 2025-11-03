@@ -3,10 +3,14 @@ package com.gruposete.war.core;
 import java.util.Map;
 import java.util.HashMap;
 import com.badlogic.gdx.utils.Array;
+import java.util.List; 
+import java.util.ArrayList;
 
 public class Mapa {
     private Map<Territorio, Array<Territorio>> adjacencias;     // Mapa que armazena as adjacências entre os territórios
     private Map<String, Territorio> tNomes;                     // Mapa para buscar territórios pelo nome
+
+    private Map<Continente, List<Territorio>> territoriosPorContinente;
 
     // Construtor: inicializa o mapa com a lista de territórios
     public Mapa(Array<Territorio> territorios){
@@ -17,8 +21,76 @@ public class Mapa {
             this.tNomes.put(t.getNome(), t);
         }
 
+        this.territoriosPorContinente = new HashMap<>();
+        setupContinentes();
+
         // Inicializa a estrutura de adjacências
         this.adjacencias = inicializarMapa(territorios);
+    }
+
+    private void setupContinentes() {
+        // América do Norte (9 Territórios)
+        adicionarAoContinente("Alasca", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Mackenzie", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Vancouver", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Ottawa", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Labrador", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Groenlândia", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Nova Iorque", Continente.AMERICA_NORTE);
+        adicionarAoContinente("California", Continente.AMERICA_NORTE);
+        adicionarAoContinente("Mexico", Continente.AMERICA_NORTE);
+
+        // América do Sul (4 Territórios)
+        adicionarAoContinente("Venezuela", Continente.AMERICA_SUL);
+        adicionarAoContinente("Peru", Continente.AMERICA_SUL);
+        adicionarAoContinente("Brasil", Continente.AMERICA_SUL);
+        adicionarAoContinente("Argentina", Continente.AMERICA_SUL);
+
+        // África (6 Territórios)
+        adicionarAoContinente("Argelia", Continente.AFRICA);
+        adicionarAoContinente("Congo", Continente.AFRICA);
+        adicionarAoContinente("Africa do Sul", Continente.AFRICA);
+        adicionarAoContinente("Sudão", Continente.AFRICA);
+        adicionarAoContinente("Egito", Continente.AFRICA);
+        adicionarAoContinente("Madagascar", Continente.AFRICA);
+
+        // Europa (7 Territórios)
+        adicionarAoContinente("Islândia", Continente.EUROPA);
+        adicionarAoContinente("Inglaterra", Continente.EUROPA);
+        adicionarAoContinente("França", Continente.EUROPA);
+        adicionarAoContinente("Alemanha", Continente.EUROPA);
+        adicionarAoContinente("Polônia", Continente.EUROPA);
+        adicionarAoContinente("Moscou", Continente.EUROPA);
+        adicionarAoContinente("Suécia", Continente.EUROPA);
+
+        // Ásia (12 Territórios)
+        adicionarAoContinente("Oriente Médio", Continente.ASIA);
+        adicionarAoContinente("India", Continente.ASIA);
+        adicionarAoContinente("Aral", Continente.ASIA);
+        adicionarAoContinente("Omsk", Continente.ASIA);
+        adicionarAoContinente("Dudinka", Continente.ASIA);
+        adicionarAoContinente("Mongólia", Continente.ASIA);
+        adicionarAoContinente("Tchita", Continente.ASIA);
+        adicionarAoContinente("China", Continente.ASIA);
+        adicionarAoContinente("Vietnã", Continente.ASIA);
+        adicionarAoContinente("Japão", Continente.ASIA);
+        adicionarAoContinente("Vladvostok", Continente.ASIA);
+        adicionarAoContinente("Sibéria", Continente.ASIA);
+
+        // Oceania (4 Territórios)
+        adicionarAoContinente("Australia", Continente.OCEANIA);
+        adicionarAoContinente("Nova Guiné", Continente.OCEANIA);
+        adicionarAoContinente("Sumatra", Continente.OCEANIA);
+        adicionarAoContinente("Borneo", Continente.OCEANIA);
+    }
+
+    // Método auxiliar (Privado)
+    private void adicionarAoContinente(String nomeTerritorio, Continente continente) {
+        Territorio t = tNomes.get(nomeTerritorio);
+        if (t != null) {
+            // Inicializa a lista para o Continente se ainda não existir
+            territoriosPorContinente.computeIfAbsent(continente, k -> new ArrayList<>()).add(t);
+        }
     }
 
     // Método que cria e configura todas as adjacências entre territórios
@@ -318,53 +390,57 @@ public class Mapa {
         mapa.put(tNomes.get("Borneo"), borneoAdj);
 
         return mapa;
-}
-
-public Array<Territorio> getTerritoriosAdj(Territorio territorio){
-    return adjacencias.get(territorio);
-}
-
-public Array<Territorio> getAlidadosAdj(Territorio territorio){
-    Array<Territorio> aliados_adj = new Array<>();
-    Array<Territorio> adj = adjacencias.get(territorio);
-    int tID = territorio.getPlayerId();
-
-    if (adj == null) return aliados_adj;
-
-    for (Territorio t : adj){
-        if (t.getPlayerId() == tID){
-            aliados_adj.add(t);
-        }
     }
-    return aliados_adj;
-}
 
-public Array<Territorio> getInimigosAdj(Territorio territorio){
-    Array<Territorio> inimigos_adj = new Array<>();
-    Array<Territorio> adj = adjacencias.get(territorio);
-    int tID = territorio.getPlayerId();
-
-    if (adj == null) return inimigos_adj;
-
-    for (Territorio t : adj){
-        if (t.getPlayerId() != tID){
-            inimigos_adj.add(t);
-        }
+    public Array<Territorio> getTerritoriosAdj(Territorio territorio){
+        return adjacencias.get(territorio);
     }
-    return inimigos_adj;
-}
 
-public boolean isAdjacente(Territorio territorioA, Territorio territorioB){
-    Array<Territorio> adj = adjacencias.get(territorioA);
-    if (adj == null) return false;
-    
-    for (Territorio t : adj){
-        if (t.equals(territorioB)){
-            return true;
+    public Array<Territorio> getAlidadosAdj(Territorio territorio){
+        Array<Territorio> aliados_adj = new Array<>();
+        Array<Territorio> adj = adjacencias.get(territorio);
+        int tID = territorio.getPlayerId();
+
+        if (adj == null) return aliados_adj;
+
+        for (Territorio t : adj){
+            if (t.getPlayerId() == tID){
+                aliados_adj.add(t);
+            }
         }
+        return aliados_adj;
     }
-    return false;
-}
+
+    public Array<Territorio> getInimigosAdj(Territorio territorio){
+        Array<Territorio> inimigos_adj = new Array<>();
+        Array<Territorio> adj = adjacencias.get(territorio);
+        int tID = territorio.getPlayerId();
+
+        if (adj == null) return inimigos_adj;
+
+        for (Territorio t : adj){
+            if (t.getPlayerId() != tID){
+                inimigos_adj.add(t);
+            }
+        }
+        return inimigos_adj;
+    }
+
+    public boolean isAdjacente(Territorio territorioA, Territorio territorioB){
+        Array<Territorio> adj = adjacencias.get(territorioA);
+        if (adj == null) return false;
+        
+        for (Territorio t : adj){
+            if (t.equals(territorioB)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Map<Continente, List<Territorio>> getTerritoriosPorContinente() {
+        return territoriosPorContinente;
+    }
 
 }
 

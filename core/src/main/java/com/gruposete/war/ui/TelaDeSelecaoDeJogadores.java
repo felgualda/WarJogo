@@ -246,12 +246,14 @@ public class TelaDeSelecaoDeJogadores {
 
     public List<Jogador> getJogadoresSelecionados() {
         List<Jogador> lista = new ArrayList<>();
+        int jogadorId = 1;
         for (Map.Entry<CorJogador, TipoJogador> entry : estadosDosJogadores.entrySet()) {
             if (entry.getValue() != TipoJogador.NENHUM) {
                 CorJogador cor = entry.getKey();
                 boolean isIA = (entry.getValue() == TipoJogador.IA);
-                lista.add(new Jogador("Jogador " + (lista.size() + 1), cor));
+                lista.add(new Jogador("Jogador " + (lista.size() + 1), cor, jogadorId));
             }
+            jogadorId += 1;
         }
         return lista;
     }
