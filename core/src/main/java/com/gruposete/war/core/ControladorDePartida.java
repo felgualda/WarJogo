@@ -119,6 +119,12 @@ public class ControladorDePartida {
         //System.out.println("Total de reforcosbase" + reforcosBase);
         
         // A lógica de troca obrigatória e reforços de continente vem aqui
+
+        int idDoJogadorAtual = this.jogadorAtual.getPlayerId(); // Ex: 1
+        int idDoJogadorAnterior = (this.indiceJogadorAtual == 0) ? this.jogadores.get(this.jogadores.size() - 1).getPlayerId() : this.jogadores.get(this.indiceJogadorAtual - 1).getPlayerId(); // Ex: 3 (se 3 jogadores)
+
+        System.out.println("DEBUG: Jogador Atual ID: " + idDoJogadorAtual);
+        System.out.println("DEBUG: Jogador Anterior ID: " + idDoJogadorAnterior);
         
         // Adicionar os exércitos de reforço ao jogadorAtual.
         this.jogadorAtual.setExercitosDisponiveis(reforcosBase);
@@ -126,12 +132,7 @@ public class ControladorDePartida {
         // Define as tropas A DISTRIBUIR com o valor calculado
         this.tropasADistribuir = this.jogadorAtual.getExercitosDisponiveis();
 
-        System.out.println("Total de tropas a distribuir" + tropasADistribuir);
-        
-        // DEBUG: Zera o contador do jogador para que ele só possa distribuir o que calculamos.
-        // Se você não tem um método para zerar, use:
-        // this.jogadorAtual.removerExercitosDisponiveis(this.tropasADistribuir);
-        // O código do controlador precisa ser ajustado para usar 'tropasADistribuir' como o saldo.        
+        System.out.println("Total de tropas a distribuir" + tropasADistribuir);     
     }
 
     public boolean alocarTropas(Territorio territorio, int quantidade) {

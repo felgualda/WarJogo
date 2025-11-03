@@ -80,6 +80,10 @@ public class Jogador {
         return playerId;
     }
 
+    public void setPlayerId(int p) {
+        this.playerId = p;
+    }
+
     // OUTROS
 
     public int adicionarTerritorio(Territorio t) {
