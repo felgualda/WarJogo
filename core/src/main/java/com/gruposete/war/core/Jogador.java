@@ -10,15 +10,32 @@ public class Jogador {
     private List<Territorio> territorios;
     private List<Carta> cartas;
     private Objetivo objetivo;
+    private int playerId;
 
     private int exercitosDisponiveis;
 
-    public Jogador(String nome, CorJogador cor) {
+    public Jogador(String nome, CorJogador cor, int playerId) {
         this.nome = nome;
         this.cor = cor;
         this.territorios = new ArrayList<>();
         this.cartas = new ArrayList<>();
         this.exercitosDisponiveis = 0;
+        this.playerId = playerId;
+    }
+
+    public void adicionarExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis += quantidade;
+        }
+    }
+
+    public void removerExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis -= quantidade;
+            if (this.exercitosDisponiveis < 0) {
+                this.exercitosDisponiveis = 0;
+            }
+        }
     }
 
     // GETTERS E SETTERS
@@ -53,6 +70,18 @@ public class Jogador {
 
     public void setObjetivo(Objetivo objetivo) {
         this.objetivo = objetivo;
+    }
+
+    public void setExercitosDisponiveis(int e) {
+        this.exercitosDisponiveis = e;
+    }
+
+    public int getPlayerId() {
+        return playerId;
+    }
+
+    public void setPlayerId(int p) {
+        this.playerId = p;
     }
 
     // OUTROS

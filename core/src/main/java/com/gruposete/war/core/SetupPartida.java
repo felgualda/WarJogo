@@ -67,15 +67,29 @@ public class SetupPartida {
 
     // Define a sequência de turnos embaralhando a lista de jogadores.
     private void definirOrdemDosTurnos() {
-        System.out.println("SETUP: Embaralhando ordem dos turnos...");
-        Collections.shuffle(this.jogadores);
+    System.out.println("SETUP: Embaralhando ordem dos turnos...");
+    Collections.shuffle(this.jogadores); // Embaralha a ordem de turnos
+
+    for (int i = 0; i < this.jogadores.size(); i++) {
+        Jogador jogador = this.jogadores.get(i);
+        int novoPlayerId = i + 1;
         
-        System.out.print("SETUP: Ordem definida: ");
-        for (int i = 0; i < this.jogadores.size(); i++) {
-            System.out.print((i+1) + "º: " + this.jogadores.get(i).getNome() + " | ");
+        // Atualiza o ID do objeto Jogador (Se a classe Jogador tiver setPlayerId)
+        jogador.setPlayerId(novoPlayerId);
+
+        // Atualiza o ID de TODOS os territórios dele no mapa
+        for (Territorio t : jogador.getTerritorios()) {
+            t.setPlayerId(novoPlayerId); 
         }
-        System.out.println();
     }
+    // FIM DA SINCRONIZAÇÃO
+    
+    System.out.print("SETUP: Ordem definida: ");
+    for (int i = 0; i < this.jogadores.size(); i++) {
+        System.out.print((i + 1) + "º: " + this.jogadores.get(i).getNome() + " (ID: " + this.jogadores.get(i).getPlayerId() + ") | ");
+    }
+    System.out.println();
+}
 
     // Sorteia e distribui as cartas de objetivo.
     private void distribuirObjetivos() {
