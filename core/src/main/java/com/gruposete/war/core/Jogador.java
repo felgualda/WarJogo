@@ -23,6 +23,21 @@ public class Jogador {
         this.playerId = playerId;
     }
 
+    public void adicionarExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis += quantidade;
+        }
+    }
+
+    public void removerExercitosDisponiveis(int quantidade) {
+        if (quantidade > 0) {
+            this.exercitosDisponiveis -= quantidade;
+            if (this.exercitosDisponiveis < 0) {
+                this.exercitosDisponiveis = 0;
+            }
+        }
+    }
+
     // GETTERS E SETTERS
 
     public String getNome() {
@@ -55,6 +70,10 @@ public class Jogador {
 
     public void setObjetivo(Objetivo objetivo) {
         this.objetivo = objetivo;
+    }
+
+    public void setExercitosDisponiveis(int e) {
+        this.exercitosDisponiveis = e;
     }
 
     public int getPlayerId() {

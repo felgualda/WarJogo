@@ -12,17 +12,25 @@ public class ServicoDeReforco {
         int totalReforcos = 0;
 
         int numTerritorios = jogador.getTerritorios().size();
+
+        System.out.println("Total de territorios" + numTerritorios);
         
         int bonusTerritorios = (int) Math.floor(numTerritorios / 3.0);
         
+        //System.out.println("Total de bonusterritorios" + bonusTerritorios);
+
         // O jogador recebe no mínimo 3 territórios
         if (bonusTerritorios < 3) {
             bonusTerritorios = 3;
         }
         totalReforcos += bonusTerritorios;
 
+        //System.out.println("Total de totalreforços" + totalReforcos);
+
         // Bônus por continente
         totalReforcos += calcularBonusContinentes(jogador, mapa);
+
+        //System.out.println("Total de reforcosbase pos contineente" + totalReforcos);
 
         // O total deve ser adicionado ao jogador no Controller:
         // jogador.adicionarExercitosDisponiveis(totalReforcos);
@@ -45,7 +53,7 @@ public class ServicoDeReforco {
                 .allMatch(t -> t.getPlayerId() == jogador.getPlayerId());
 
             if (domina) {
-                // Adiciona o bônus de exércitos por continente dominado[cite: 18].
+                // Adiciona o bônus de exércitos por continente dominado
                 bonusTotal += cont.getBonusExercitos();
             }
         }

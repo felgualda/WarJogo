@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.Array;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.gruposete.war.core.ServicoDeReforco;
 // import java.util.Random; // Não é mais necessário, AtaqueLogica tem o seu
 
 /**
@@ -102,11 +103,35 @@ public class ControladorDePartida {
                 break;
         }
     }
+
+    /**
+     * Calcula o total de tropas que o jogador receberá no início do seu turno.
+     */
     private void calcularTropasDoTurno() {
-        // TODO: Implementar a lógica real min(Territorios / 2 + Bônus de Continente, 3)
-        // Por enquanto, damos 5 tropas de bônus para teste.
-        this.tropasADistribuir = 5;
+
+        tropasADistribuir = 0;
+        
+        // Calcular o bônus base (Territórios / 3) + Bônus de Continentes
+        int reforcosBase = ServicoDeReforco.calcularTotalReforcos(this.jogadorAtual, this.mapa);
+
+        //System.out.println("Total de reforcosbase" + reforcosBase);
+        
+        // A lógica de troca obrigatória e reforços de continente vem aqui
+        
+        // Adicionar os exércitos de reforço ao jogadorAtual.
+        this.jogadorAtual.setExercitosDisponiveis(reforcosBase);
+        
+        // Define as tropas A DISTRIBUIR com o valor calculado
+        this.tropasADistribuir = this.jogadorAtual.getExercitosDisponiveis();
+
+        System.out.println("Total de tropas a distribuir" + tropasADistribuir);
+        
+        // DEBUG: Zera o contador do jogador para que ele só possa distribuir o que calculamos.
+        // Se você não tem um método para zerar, use:
+        // this.jogadorAtual.removerExercitosDisponiveis(this.tropasADistribuir);
+        // O código do controlador precisa ser ajustado para usar 'tropasADistribuir' como o saldo.        
     }
+
     public boolean alocarTropas(Territorio territorio, int quantidade) {
         int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
 
@@ -134,33 +159,54 @@ public class ControladorDePartida {
         this.tropasADistribuir -= quantidade;
         return true;
     }
-    /**
-     * Executa UMA rodada de combate usando AtaqueLogica.
-     * @param atacante Território de origem do ataque.
-     * @param defensor Território alvo.
-     * @return O AtaqueEstado (ex: TERRITORIO_CONQUISTADO, TROPAS_INSUFICIENTES)
-     */
+
     public AtaqueEstado realizarAtaque(Territorio atacante, Territorio defensor) {
+    // 1. Validação de Estado do Jogo (Ataque deve ser na fase correta)
+    if (this.estadoTurno != EstadoTurno.ATACANDO) {
+        // Retorna um estado de falha ou erro, assumindo que AtaqueEstado tem essa opção
+        // return AtaqueEstado.NAO_NA_FASE; 
+    }
+    
+    // 2. Obter o jogador defensor
+    int jogadorDefensorID = defensor.getPlayerId();
+    // O PlayerId é 1-based, a lista de Jogadores é 0-based.
+    Jogador jogadorDefensor = jogadores.get(jogadorDefensorID - 1); 
 
-        // 1. Obter o jogador defensor
-        int jogadorDefensorID = defensor.getPlayerId();
+    // 3. Criar e Executar a lógica de ataque (RF8)
+    // NOTE: Este construtor exige as classes AtaqueLogica e AtaqueEstado
+    AtaqueLogica logica = new AtaqueLogica(atacante, defensor, this.jogadorAtual, jogadorDefensor, this.mapa);
+    AtaqueEstado resultado = logica.executarUmaRodada(); 
 
-        // 2. Criar a lógica de ataque para esta rodada
-        AtaqueLogica logica = new AtaqueLogica(atacante, defensor, this.jogadorAtual, jogadores.get(jogadorDefensorID-1), this.mapa);
-        // 3. Executar a rodada (AtaqueLogica atualiza as tropas nos objetos)
-        AtaqueEstado resultado = logica.executarUmaRodada();
+    // 4. Atualizar o estado do turno e os dados do Jogo se houve conquista
+    if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+        this.conquistouTerritorioNesteTurno = true; // Necessário para dar carta (RF20)
 
-        // 4. Atualizar o estado do turno se houve conquista
-        if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
-            this.conquistouTerritorioNesteTurno = true;
+        // --- CORREÇÃO DO BUG DE CONTAGEM (Transferência de Posse) ---
+        
+        // a) O jogador defensor perde o território.
+        jogadorDefensor.removerTerritorio(defensor);
+        
+        // b) O jogador atacante ganha o território.
+        this.jogadorAtual.adicionarTerritorio(defensor);
 
-            // NOTA: O AtaqueLogica já define o 'playerId' no território.
-            // A TelaDeJogo agora deve perguntar "Quantas tropas mover?"
-            // e então chamar moverTropasAposConquista().
+        // c) O território defensor foi eliminado? (RF13c e RF22)
+        if (jogadorDefensor.getTerritorios().isEmpty()) {
+            // Se o jogador foi eliminado, a lógica de RF22 deve ser acionada (transferência de cartas).
+            // A lógica real deve ser implementada em um serviço: ServicoDeVitoria.processarEliminacao(jogadorAtacante, jogadorDefensor);
         }
 
-        return resultado; // Retorna o enum
+        // A AtaqueLogica já atualizou o PlayerId e a cor no Território.
+        
+        // A TelaDeJogo deve agora solicitar a movimentação pós-conquista (RF10).
     }
+    
+    // 5. Verificar condição de vitória (RF13) - Deve ser feito pelo Controlador após cada conquista.
+    // this.verificarVitoria(this.jogadorAtual);
+
+    return resultado; // Retorna o enum
+}
+
+    
 
     /**
      * Move as tropas após uma conquista.
@@ -250,6 +296,8 @@ public class ControladorDePartida {
 
         return true;
     }
+
+
 
     /**
      * Adiciona uma carta (mock) ao jogador atual.
