@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.Mapa;
 import com.gruposete.war.core.Territorio;
+import com.gruposete.war.core.VerificadorObjetivos;
 import com.gruposete.war.utils.Utils;
 
 // imports para jogo configurado
@@ -34,6 +35,7 @@ public class TelaDeJogo {
     private Array<Territorio> territorios;
     private Mapa mapa;
     private List<Jogador> jogadores;
+    private VerificadorObjetivos verificadorObjetivos;
     private BitmapFont font;
     private Skin skin;
     private Texture background;
@@ -48,6 +50,7 @@ public class TelaDeJogo {
         this.jogadores = jogadores; // Agora 'jogadores' vem do parâmetro
         this.territorios = territoriosProntos; // Agora 'territoriosProntos' vem do parâmetro
         this.mapa = mapaAdjacenciaPronto;
+        this.verificadorObjetivos = new VerificadorObjetivos(jogadores, territoriosProntos);    // Classe usada para gerenciar a lógica de Verificar acompletude de um Objetivo
 
         // Cria stage e define viewport
         stage = new Stage(new FitViewport(1280, 720));
@@ -85,6 +88,8 @@ public class TelaDeJogo {
                         for (Territorio a : aliados) {
                             System.out.println(" - " + a.getNome());
                         }
+
+                        verificarVitoria();     // Teste de vitória, APENAS PARA TESTES RETIRAR POSTERIORMENTE
 
                         return true;
                     }
@@ -152,6 +157,15 @@ public class TelaDeJogo {
         });
 
         return btnVoltar;
+    }
+
+    // Método usado para verificar dentre todos os Objetivos se algum foi concluído
+    public void verificarVitoria() {
+        Jogador vencedor = verificadorObjetivos.verificarTodosObjetivos();
+        if (vencedor != null) {
+            System.out.println("JOGADOR VENCEU: " + vencedor.getNome());
+            // Aqui você pode mostrar uma tela de vitória, etc.
+        }
     }
 
     public void render(float delta) {
