@@ -75,4 +75,51 @@ public class Territorio {
     public float[] getVertices(){ return this.area.getVertices(); }
     public Color getColor(){ return this.color; }
     public int getPlayerId(){ return this.playerId; };
+
+    // Método para recuperar o continente de um território, usado em VerificadorObjetivos
+    public String getContinente() {
+        String nome = this.getNome();
+
+        if (nome.equals("Mexico") || nome.equals("California") || 
+            nome.equals("Nova Iorque") || nome.equals("Vancouver") || 
+            nome.equals("Ottawa") || nome.equals("Labrador") || 
+            nome.equals("Mackenzie") || nome.equals("Alasca") ||
+            nome.equals("Groenlândia")) {
+            return "América do Norte";
+        }
+
+        if (nome.equals("Brasil") || nome.equals("Peru") || 
+            nome.equals("Argentina") || nome.equals("Venezuela")) {
+            return "América do Sul";
+        }
+
+        if (nome.equals("Argelia") || nome.equals("Congo") || 
+            nome.equals("Africa do Sul") || nome.equals("Sudão") || 
+            nome.equals("Egito") || nome.equals("Madagascar")) {
+            return "África";
+        }
+
+        if (nome.equals("Australia") || nome.equals("Nova Guiné") || 
+            nome.equals("Sumatra") || nome.equals("Borneo")) {
+            return "Oceania";
+        }
+
+        if (nome.equals("Islândia") || nome.equals("Inglaterra") || 
+            nome.equals("França") || nome.equals("Alemanha") || 
+            nome.equals("Polônia") || nome.equals("Moscou") || 
+            nome.equals("Suécia")) {
+            return "Europa";
+        }
+
+        if (nome.equals("Oriente Médio") || nome.equals("India") || 
+            nome.equals("Aral") || nome.equals("Omsk") || 
+            nome.equals("Dudinka") || nome.equals("Mongólia") || 
+            nome.equals("Tchita") || nome.equals("China") || 
+            nome.equals("Vietnã") || nome.equals("Japão") || 
+            nome.equals("Vladvostok") || nome.equals("Sibéria")) {
+            return "Ásia";
+        }
+
+        return "ERRO: Não foi possível definir o continente do Território: " + nome;
+    }
 }
