@@ -121,6 +121,8 @@ public class Territorio {
         }
 
         return "ERRO: Não foi possível definir o continente do Território: " + nome;
+    }
+    
     public void setTropas(int tropas) {
         this.tropas = tropas;
     }
