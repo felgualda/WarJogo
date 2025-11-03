@@ -10,15 +10,17 @@ public class Jogador {
     private List<Territorio> territorios;
     private List<Carta> cartas;
     private Objetivo objetivo;
+    private int playerId;
 
     private int exercitosDisponiveis;
 
-    public Jogador(String nome, CorJogador cor) {
+    public Jogador(String nome, CorJogador cor, int playerId) {
         this.nome = nome;
         this.cor = cor;
         this.territorios = new ArrayList<>();
         this.cartas = new ArrayList<>();
         this.exercitosDisponiveis = 0;
+        this.playerId = playerId;
     }
 
     // GETTERS E SETTERS
@@ -53,6 +55,10 @@ public class Jogador {
 
     public void setObjetivo(Objetivo objetivo) {
         this.objetivo = objetivo;
+    }
+
+    public int getPlayerId() {
+        return playerId;
     }
 
     // OUTROS
