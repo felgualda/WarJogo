@@ -137,8 +137,8 @@ public class BaralhoDeTroca {
         }
 
         // 2. Cria os 2 Curingas (IDs 1 e 2)
-        baralho.add(new Carta(1, "Cartas/1.png"));
-        baralho.add(new Carta(2, "Cartas/2.png"));
+        baralho.add(new Carta(1, "Carta/1.png"));
+        baralho.add(new Carta(2, "Carta/2.png"));
 
         // 3. Cria as 42 cartas de território (IDs 3-44)
         for (CardData data : TERRITORY_MAP) {
@@ -150,8 +150,8 @@ public class BaralhoDeTroca {
                 continue;
             }
 
-            // O asset path é "Cartas/[id].png"
-            String assetPath = "Cartas/" + data.id + ".png";
+            // O asset path é "Carta/[id].png"
+            String assetPath = "Carta/" + data.id + ".png";
 
             baralho.add(new Carta(data.id, data.simbolo, territorio, assetPath));
         }
