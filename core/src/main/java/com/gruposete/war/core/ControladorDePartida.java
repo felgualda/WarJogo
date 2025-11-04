@@ -33,6 +33,7 @@ public class ControladorDePartida {
 
     private EstadoTurno estadoTurno;
     private boolean conquistouTerritorioNesteTurno;
+    private int contadorGlobalDeTrocas;
 
 
     /**
@@ -50,6 +51,7 @@ public class ControladorDePartida {
         this.setupLogic = new SetupPartida(this.jogadores);
 
         this.jogadores = setupLogic.getJogadoresPreparados();
+        this.contadorGlobalDeTrocas = 0;
         this.territorios = setupLogic.getTodosOsTerritorios();
         this.mapa = setupLogic.getMapaAdjacencias();
 
@@ -65,7 +67,53 @@ public class ControladorDePartida {
     }
 
     // --- LÓGICA DE FLUXO DE JOGO ---
+    public boolean tentarTrocaDeCartas(List<Carta> cartasSelecionadas) {
+        if (cartasSelecionadas == null || cartasSelecionadas.size() != 3) {
+            return false; // Deve selecionar exatamente 3 cartas
+        }
 
+        Carta c1 = cartasSelecionadas.get(0);
+        Carta c2 = cartasSelecionadas.get(1);
+        Carta c3 = cartasSelecionadas.get(2);
+
+        // 1. Valida a combinação usando o serviço
+        if (!ServicoDeCartas.isCombinacaoValida(c1, c2, c3)) {
+            Gdx.app.log("Controlador", "Troca falhou: Combinação inválida.");
+            return false;
+        }
+
+        // --- SUCESSO ---
+
+        // 2. Calcular bônus de exércitos e incrementar o contador global
+        this.contadorGlobalDeTrocas++;
+        int bonusExercitos = ServicoDeCartas.calcularBonusTroca(this.contadorGlobalDeTrocas);
+
+        // Adiciona o bônus principal às tropas de distribuição
+        this.tropasADistribuir += bonusExercitos;
+
+        Gdx.app.log("Controlador", "Troca #" + this.contadorGlobalDeTrocas + " concluída. Bônus: " + bonusExercitos);
+
+        // 3. Processar bônus de território
+        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
+        for (Carta carta : cartasSelecionadas) {
+            Territorio t = carta.getTerritorio();
+
+            // Verifica se a carta é de território e se o jogador o possui
+            if (t != null && t.getPlayerId() - 1 == indiceJogador) {
+                // (Assumindo que Territorio tem setTropas ou similar)
+                t.setTropas(t.getTropas() + 2);
+                Gdx.app.log("Controlador", "Bônus de Território: +2 tropas em " + t.getNome());
+            }
+
+            // 4. Remove da mão do jogador
+            this.jogadorAtual.getCartas().remove(carta);
+        }
+
+        // 5. Devolve as cartas ao Baralho (Singleton)
+        BaralhoDeTroca.getInstance().receberTroca(cartasSelecionadas);
+
+        return true;
+    }
     /**
      * Avança para o próximo jogador e aplica regras de fim de turno.
      */
@@ -88,6 +136,15 @@ public class ControladorDePartida {
     public void proximaFaseTurno() {
         switch (this.estadoTurno) {
             case DISTRIBUINDO:
+                if (ServicoDeCartas.isTrocaObrigatoria(this.jogadorAtual)) {
+                    Gdx.app.log("Controlador", "Troca obrigatória. Não pode avançar de fase.");
+                    // (A UI deve mostrar um aviso)
+                    return;
+                }
+                if (this.tropasADistribuir > 0) {
+                    Gdx.app.log("Controlador", "Ainda há tropas para distribuir.");
+                    return;
+                }
                 this.estadoTurno = EstadoTurno.ATACANDO;
                 break;
             case ATACANDO:

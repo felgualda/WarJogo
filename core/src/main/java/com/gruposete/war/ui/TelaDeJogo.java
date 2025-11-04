@@ -24,6 +24,7 @@ import com.gruposete.war.core.ControladorDePartida.EstadoTurno; // Importa o Enu
 // imports para preenchimento de territórios
 import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.utils.ShortArray;
+import com.gruposete.war.ui.DialogoCartas;
 
 public class TelaDeJogo {
 
@@ -307,6 +308,15 @@ public class TelaDeJogo {
         tropasLabel = new Label("Tropas: 0", skin);
         tropasLabel.setColor(Color.BLACK);
         tropasLabel.setFontScale(2.0f);
+
+        TextButton btnCartas = new TextButton("Cartas", skin);
+        btnCartas.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                // Apenas cria e mostra a nova classe de diálogo
+                new DialogoCartas(controlador, skin).show(stage);
+            }
+        });
         // --- 4. Botão Próxima Fase (col 4 - "ultima coluna") ---
         btnProximaFase = new ImageButton(drawArrowRight);
         btnProximaFase.getImage().setColor(Color.BLACK);
@@ -322,6 +332,7 @@ public class TelaDeJogo {
         // Adiciona os 4 elementos na única linha do banner
         banner.add(iconeStack).size(borderSize);    // Col 1
         banner.add(tropasLabel).expandX().left();   // Col 2
+        banner.add(btnCartas).width(120);
         //banner.add(btnVoltar).width(120);           // Col 3
         banner.add(btnProximaFase).size(64, 64); // Col 4 (Última)
 
