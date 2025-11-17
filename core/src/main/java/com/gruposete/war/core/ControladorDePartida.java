@@ -174,12 +174,12 @@ public class ControladorDePartida {
     private void calcularTropasDoTurno() {
 
         tropasADistribuir = 0;
-        
+
         // Calcular o bônus base (Territórios / 3) + Bônus de Continentes
         int reforcosBase = ServicoDeReforco.calcularTotalReforcos(this.jogadorAtual, this.mapa);
 
         //System.out.println("Total de reforcosbase" + reforcosBase);
-        
+
         // A lógica de troca obrigatória e reforços de continente vem aqui
 
         int idDoJogadorAtual = this.jogadorAtual.getPlayerId(); // Ex: 1
@@ -187,14 +187,14 @@ public class ControladorDePartida {
 
         System.out.println("DEBUG: Jogador Atual ID: " + idDoJogadorAtual);
         System.out.println("DEBUG: Jogador Anterior ID: " + idDoJogadorAnterior);
-        
+
         // Adicionar os exércitos de reforço ao jogadorAtual.
         this.jogadorAtual.setExercitosDisponiveis(reforcosBase);
-        
+
         // Define as tropas A DISTRIBUIR com o valor calculado
         this.tropasADistribuir = this.jogadorAtual.getExercitosDisponiveis();
 
-        System.out.println("Total de tropas a distribuir" + tropasADistribuir);     
+        System.out.println("Total de tropas a distribuir" + tropasADistribuir);
     }
 
     public boolean alocarTropas(Territorio territorio, int quantidade) {
@@ -229,28 +229,28 @@ public class ControladorDePartida {
     // 1. Validação de Estado do Jogo (Ataque deve ser na fase correta)
     if (this.estadoTurno != EstadoTurno.ATACANDO) {
         // Retorna um estado de falha ou erro, assumindo que AtaqueEstado tem essa opção
-        // return AtaqueEstado.NAO_NA_FASE; 
+        // return AtaqueEstado.NAO_NA_FASE;
     }
-    
+
     // 2. Obter o jogador defensor
     int jogadorDefensorID = defensor.getPlayerId();
     // O PlayerId é 1-based, a lista de Jogadores é 0-based.
-    Jogador jogadorDefensor = jogadores.get(jogadorDefensorID - 1); 
+    Jogador jogadorDefensor = jogadores.get(jogadorDefensorID - 1);
 
     // 3. Criar e Executar a lógica de ataque (RF8)
     // NOTE: Este construtor exige as classes AtaqueLogica e AtaqueEstado
     AtaqueLogica logica = new AtaqueLogica(atacante, defensor, this.jogadorAtual, jogadorDefensor, this.mapa);
-    AtaqueEstado resultado = logica.executarUmaRodada(); 
+    AtaqueEstado resultado = logica.executarUmaRodada();
 
     // 4. Atualizar o estado do turno e os dados do Jogo se houve conquista
     if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
         this.conquistouTerritorioNesteTurno = true; // Necessário para dar carta (RF20)
 
         // --- CORREÇÃO DO BUG DE CONTAGEM (Transferência de Posse) ---
-        
+
         // a) O jogador defensor perde o território.
         jogadorDefensor.removerTerritorio(defensor);
-        
+
         // b) O jogador atacante ganha o território.
         this.jogadorAtual.adicionarTerritorio(defensor);
 
@@ -266,10 +266,10 @@ public class ControladorDePartida {
         }
 
         // A AtaqueLogica já atualizou o PlayerId e a cor no Território.
-        
+
         // A TelaDeJogo deve agora solicitar a movimentação pós-conquista (RF10).
     }
-    
+
     // 5. Verificar condição de vitória (RF13) - Deve ser feito pelo Controlador após cada conquista.
     // this.verificarVitoria(this.jogadorAtual);
     this.verificarVitoria();
@@ -277,7 +277,7 @@ public class ControladorDePartida {
     return resultado; // Retorna o enum
 }
 
-    
+
 
     /**
      * Move as tropas após uma conquista.
@@ -431,16 +431,16 @@ public class ControladorDePartida {
     // A classe interna 'ResultadoCombate' foi removida pois é desnecessária.
     // A TelaDeJogo deve reagir ao 'AtaqueEstado' retornado por 'realizarAtaque'.
 
-    // ✅ MÉTODO PARA IMPRIMIR OBJETIVOS (útil para testes)
+    // MÉTODO PARA IMPRIMIR OBJETIVOS (útil para testes)
     public void imprimirObjetivosJogadores() {
         System.out.println("\n=== OBJETIVOS DOS JOGADORES ===");
         for (Jogador jogador : jogadores) {
             Objetivo objetivo = jogador.getObjetivo();
             if (objetivo != null) {
-                System.out.println("🎯 " + jogador.getNome() + " (" + jogador.getCor() + "): " + 
+                System.out.println(" " + jogador.getNome() + " (" + jogador.getCor() + "): " +
                                  objetivo.getDescricao());
             } else {
-                System.out.println("❌ " + jogador.getNome() + ": SEM OBJETIVO");
+                System.out.println(" " + jogador.getNome() + ": SEM OBJETIVO");
             }
         }
         System.out.println("===============================\n");

@@ -78,7 +78,7 @@ public class DialogoCartas extends Dialog {
                                     Carta cartaRemovida = cartasSelecionadas.remove(0);
                                     Actor atorRemovido = mapaAtores.get(cartaRemovida);
                                     if (atorRemovido != null) {
-                                        atorCarta.setPosition((atorCarta.getX()+(atorCarta.getWidth()/22)), (atorCarta.getY()+(atorCarta.getHeight()/22)));
+                                        atorRemovido.setPosition((atorRemovido.getX()+(atorRemovido.getWidth()/22)), (atorRemovido.getY()+(atorRemovido.getHeight()/22)));
                                         atorRemovido.setScale(1.0f);
                                     }
                                 }
@@ -126,6 +126,7 @@ public class DialogoCartas extends Dialog {
         if (object.equals(true)) {
             if (cartasSelecionadas.size() != 3) {
                 errorLabel.setText("Voce deve selecionar 3 cartas.");
+                cancel();
                 return; // Impede o diálogo de fechar
             }
 
@@ -134,6 +135,7 @@ public class DialogoCartas extends Dialog {
 
             if (!sucesso) {
                 errorLabel.setText("Combinacao Invalida.");
+                cancel();
                 return; // Impede o diálogo de fechar
             }
         }
