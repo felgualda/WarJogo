@@ -48,6 +48,7 @@ public class TelaDeJogo {
     private ImageButton btnProximaFase;
     private Image iconeJogador;
     private Label tropasLabel;
+    private TextButton btnObjetivo;
 
     public TelaDeJogo(Runnable voltarParaMenu, ControladorDePartida controlador) {
         this.voltarParaMenu = voltarParaMenu;
@@ -275,6 +276,24 @@ public class TelaDeJogo {
         dialog.show(stage); // (Corrigido para usar o 'stage' único)
     }
     private void buildUIStage() {
+        // Botao objetivos
+        btnObjetivo = new TextButton("Objetivo", skin);
+        btnObjetivo.setSize(100, 50);
+        btnObjetivo.setPosition(50, 20);
+
+        btnObjetivo.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                // Pega o objetivo do jogador atual
+                Objetivo obj = controlador.getJogadorAtual().getObjetivo();
+                if (obj != null) {
+                    new DialogoObjetivo(obj, skin).show(stage);
+                } else {
+                    Gdx.app.log("UI", "Jogador sem objetivo!");
+                }
+            }
+        });
+
         // Tabela principal (bottom-aligned)
         Table uiTable = new Table();
         uiTable.setFillParent(true);
@@ -339,6 +358,7 @@ public class TelaDeJogo {
         // Adiciona o banner (600x100) à tabela principal
         uiTable.add(banner).prefSize(600, 100);
         stage.addActor(uiTable);
+        stage.addActor(btnObjetivo);
     }
     private void atualizarUI() {
         Jogador jogador = controlador.getJogadorAtual();
@@ -404,7 +424,7 @@ public class TelaDeJogo {
         return btnVoltar;
     }
 
-    
+
 
     public void render(float delta) {
         // limpa a tela
