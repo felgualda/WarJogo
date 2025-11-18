@@ -1,4 +1,4 @@
-package com.gruposete.war.ui; // Ajuste o pacote se necessário
+package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -15,145 +15,174 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Uma classe segregada que é uma subjanela (Dialog) para
- * gerenciar a visualização e troca de cartas.
- */
 public class DialogoCartas extends Dialog {
 
+    // --- CONSTANTES ---
+    private static final float CARD_WIDTH = 100f;
+    private static final float CARD_HEIGHT = 150f;
+    private static final float CARD_PAD = 10f;
+    private static final float SCROLL_W = 600f;
+    private static final float SCROLL_H = 240f;
+    private static final float FONT_SCALE_BTN = 1.2f;
+
+    // Escala e Ajuste Manual (O "Magic Number" 22)
+    private static final float SCALE_NORMAL = 1.0f;
+    private static final float SCALE_SELECTED = 1.1f;
+    private static final float OFFSET_DIVISOR = 22f;
+    private static final float BTN_PAD = 20f;
+
+    // --- ATRIBUTOS ---
     private final ControladorDePartida controlador;
     private final List<Carta> maoDoJogador;
-
-    // Estado interno do diálogo
-    private final List<Carta> cartasSelecionadas = new ArrayList<>();
-    private final Map<Carta, Actor> mapaAtores = new HashMap<>();
-    private final List<Texture> texturasCarregadas = new ArrayList<>();
-
     private final Label errorLabel;
+
+    // --- ESTADO INTERNO ---
+    private final List<Carta> cartasSelecionadas = new ArrayList<>();
+    // Alterado para Map<Carta, Image> para facilitar acesso aos métodos de ator
+    private final Map<Carta, Image> mapaAtores = new HashMap<>();
+    private final List<Texture> texturasCarregadas = new ArrayList<>();
 
     public DialogoCartas(final ControladorDePartida controlador, Skin skin) {
         super("Suas Cartas", skin);
-
         this.controlador = controlador;
         this.maoDoJogador = controlador.getJogadorAtual().getCartas();
 
-        // Configurações do Diálogo
         setModal(true);
         setMovable(true);
 
-        // Label para erros
         errorLabel = new Label("", skin);
         errorLabel.setColor(Color.RED);
 
-        // 1. Cria o container das cartas (Fileira única)
+        construirInterface(skin);
+    }
+
+    private void construirInterface(Skin skin) {
+        // 1. Container de Cartas
         Table containerCartas = new Table();
+
         if (maoDoJogador.isEmpty()) {
             containerCartas.add(new Label("Voce nao possui cartas.", skin));
         } else {
-            // Loop para criar um Ator (Image) para cada Carta
             for (final Carta carta : maoDoJogador) {
-                try {
-                    // Carrega a textura da carta
-                    Texture tex = new Texture(Gdx.files.internal(carta.getAssetPath()));
-                    texturasCarregadas.add(tex); // Adiciona para futuro dispose
-
-                    final Image atorCarta = new Image(tex);
-                    atorCarta.setScale(1.0f); // Escala padrão
-                    mapaAtores.put(carta, atorCarta); // Linka o dado ao ator
-
-                    // --- Lógica de Seleção ---
-                    atorCarta.addListener(new ClickListener() {
-                        @Override
-                        public void clicked(InputEvent event, float x, float y) {
-                            errorLabel.setText(""); // Limpa o erro
-                            if (cartasSelecionadas.contains(carta)) {
-                                // --- DESELECIONAR ---
-                                cartasSelecionadas.remove(carta);
-                                atorCarta.setPosition((atorCarta.getX()+(atorCarta.getWidth()/22)), (atorCarta.getY()+(atorCarta.getHeight()/22)));
-                                atorCarta.setScale(1.0f); // Feedback visual
-                            } else {
-                                // --- SELECIONAR ---
-                                if (cartasSelecionadas.size() >= 3) {
-                                    // Regra FIFO: Selecionar o 4º deseleciona o 1º
-                                    Carta cartaRemovida = cartasSelecionadas.remove(0);
-                                    Actor atorRemovido = mapaAtores.get(cartaRemovida);
-                                    if (atorRemovido != null) {
-                                        atorRemovido.setPosition((atorRemovido.getX()+(atorRemovido.getWidth()/22)), (atorRemovido.getY()+(atorRemovido.getHeight()/22)));
-                                        atorRemovido.setScale(1.0f);
-                                    }
-                                }
-                                cartasSelecionadas.add(carta);
-                                atorCarta.setScale(1.1f); // Feedback visual (10% maior)
-                                atorCarta.setPosition((atorCarta.getX()-(atorCarta.getWidth()/22)), (atorCarta.getY()-(atorCarta.getHeight()/22)));
-                            }
-                        }
-                    });
-
-                    containerCartas.add(atorCarta).size(100, 150).pad(10); // Tamanho da carta (ajuste)
-
-                } catch (Exception e) {
-                    Gdx.app.error("DialogoCartas", "Falha ao carregar asset: " + carta.getAssetPath(), e);
-                    containerCartas.add(new Label("Erro", skin)).pad(10);
-                }
+                adicionarCartaAoContainer(containerCartas, carta, skin);
             }
         }
 
-        // 2. Cria o ScrollPane
+        // 2. ScrollPane
         ScrollPane scrollPane = new ScrollPane(containerCartas, skin);
         scrollPane.setFadeScrollBars(false);
-        scrollPane.setScrollingDisabled(false, true); // Scroll horizontal
+        scrollPane.setScrollingDisabled(false, true);
 
-        // 3. Monta o Layout do Diálogo
+        // 3. Layout Principal
         Table contentTable = getContentTable();
-        contentTable.add(scrollPane).prefHeight(240).prefWidth(600); // Tamanho da área de scroll
+        contentTable.add(scrollPane).prefWidth(SCROLL_W).prefHeight(SCROLL_H);
         contentTable.row();
-        contentTable.add(errorLabel).pad(10); // Área para mensagens de erro
+        contentTable.add(errorLabel).pad(CARD_PAD);
 
-        // 4. Botões "Voltar" e "Confirmar"
+        // 4. Botões
         TextButton btnVoltar = new TextButton("Voltar", skin);
         TextButton btnConfirmar = new TextButton("Confirmar", skin);
+        btnVoltar.getLabel().setFontScale(FONT_SCALE_BTN);
+        btnConfirmar.getLabel().setFontScale(FONT_SCALE_BTN);
+        getButtonTable().defaults().pad(BTN_PAD);
+        button(btnVoltar, false);
+        button(btnConfirmar, true);
+    }
 
-        button(btnVoltar, false); // 'false' é o objeto de resultado
-        button(btnConfirmar, true); // 'true' é o objeto de resultado
+    private void adicionarCartaAoContainer(Table container, final Carta carta, Skin skin) {
+        try {
+            Texture tex = new Texture(Gdx.files.internal(carta.getAssetPath()));
+            texturasCarregadas.add(tex);
+
+            final Image atorCarta = new Image(tex);
+            atorCarta.setScale(SCALE_NORMAL);
+            // NOTA: Não usamos setOrigin aqui, pois usaremos o cálculo manual
+
+            mapaAtores.put(carta, atorCarta);
+
+            atorCarta.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    tratarCliqueCarta(carta, atorCarta);
+                }
+            });
+
+            container.add(atorCarta).size(CARD_WIDTH, CARD_HEIGHT).pad(CARD_PAD);
+
+        } catch (Exception e) {
+            Gdx.app.error("DialogoCartas", "Falha ao carregar asset: " + carta.getAssetPath(), e);
+            container.add(new Label("Erro", skin)).pad(CARD_PAD);
+        }
     }
 
     /**
-     * Chamado quando um dos botões (Voltar, Confirmar) é clicado.
+     * Aplica a lógica de seleção com o cálculo manual de posição.
      */
+    private void tratarCliqueCarta(Carta carta, Image ator) {
+        errorLabel.setText("");
+
+        // Calcula o deslocamento necessário (W/22, H/22)
+        float moveX = ator.getWidth() / OFFSET_DIVISOR;
+        float moveY = ator.getHeight() / OFFSET_DIVISOR;
+
+        if (cartasSelecionadas.contains(carta)) {
+            // --- DESELECIONAR ---
+            cartasSelecionadas.remove(carta);
+
+            // Volta ao normal: Move para a direita/cima (+) e reduz escala
+            ator.setPosition(ator.getX() + moveX, ator.getY() + moveY);
+            ator.setScale(SCALE_NORMAL);
+
+        } else {
+            // --- SELECIONAR ---
+            if (cartasSelecionadas.size() >= 3) {
+                // Regra FIFO: Remove a primeira da lista
+                Carta cartaRemovida = cartasSelecionadas.remove(0);
+                Image atorRemovido = mapaAtores.get(cartaRemovida);
+
+                if (atorRemovido != null) {
+                    // Reseta visualmente a carta que foi removida (FIFO)
+                    float oldMoveX = atorRemovido.getWidth() / OFFSET_DIVISOR;
+                    float oldMoveY = atorRemovido.getHeight() / OFFSET_DIVISOR;
+
+                    atorRemovido.setPosition(atorRemovido.getX() + oldMoveX, atorRemovido.getY() + oldMoveY);
+                    atorRemovido.setScale(SCALE_NORMAL);
+                }
+            }
+
+            cartasSelecionadas.add(carta);
+
+            // Aplica destaque: Move para esquerda/baixo (-) e aumenta escala
+            ator.setPosition(ator.getX() - moveX, ator.getY() - moveY);
+            ator.setScale(SCALE_SELECTED);
+        }
+    }
+
     @Override
     protected void result(Object object) {
-        // Checa se o botão clicado foi "Confirmar" (resultado 'true')
         if (object.equals(true)) {
+            // Botão Confirmar
             if (cartasSelecionadas.size() != 3) {
                 errorLabel.setText("Voce deve selecionar 3 cartas.");
                 cancel();
-                return; // Impede o diálogo de fechar
+                return;
             }
 
-            // --- Chama o Serviço (Controlador) ---
             boolean sucesso = controlador.tentarTrocaDeCartas(cartasSelecionadas);
 
             if (!sucesso) {
                 errorLabel.setText("Combinacao Invalida.");
                 cancel();
-                return; // Impede o diálogo de fechar
+                return;
             }
         }
-
-        // Se foi "Voltar" (resultado 'false') ou se a troca foi bem-sucedida,
-        // o diálogo continua e chama o hide().
+        // Se false (Voltar) ou sucesso, fecha.
     }
 
-    /**
-     * Sobrescrevemos o 'hide()' para limpar as texturas que carregamos
-     * toda vez que o diálogo é fechado.
-     */
     @Override
     public void hide() {
-        super.hide(); // Chama o 'hide()' original
-
-        // Limpeza de Memória (CRÍTICO)
-        Gdx.app.log("DialogoCartas", "Fechando e limpando " + texturasCarregadas.size() + " texturas.");
+        super.hide();
+        Gdx.app.log("DialogoCartas", "Limpando " + texturasCarregadas.size() + " texturas.");
         for (Texture t : texturasCarregadas) {
             t.dispose();
         }

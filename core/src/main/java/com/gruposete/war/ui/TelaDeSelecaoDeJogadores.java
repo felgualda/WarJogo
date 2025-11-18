@@ -135,12 +135,13 @@ public class TelaDeSelecaoDeJogadores {
         // Fonte para Botões
         fontBotaoNav = new BitmapFont();
         fontBotaoNav.getData().setScale(FONT_SCALE_NORMAL);
-        TextButton.TextButtonStyle buttonStyleNav = new TextButton.TextButtonStyle(
-            skin.getDrawable("buttonUp"),
-            skin.getDrawable("buttonDown"),
-            skin.getDrawable("buttonOver"),
-            fontBotaoNav
-        );
+
+        TextButton.TextButtonStyle buttonStyleNav = new TextButton.TextButtonStyle();
+        buttonStyleNav.font = fontBotaoNav;
+        buttonStyleNav.up = skin.getDrawable("buttonUp");
+        buttonStyleNav.down = skin.getDrawable("buttonDown");
+        buttonStyleNav.over = skin.getDrawable("buttonOver");
+
         skin.add("nav-button-style", buttonStyleNav);
     }
 
