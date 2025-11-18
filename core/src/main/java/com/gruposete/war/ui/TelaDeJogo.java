@@ -42,6 +42,9 @@ public class TelaDeJogo {
     private static final float BTN_OBJETIVO_X = 50f;
     private static final float BTN_OBJETIVO_Y = 20f;
 
+    private static final float FONT_SCALE_PHASE = 2.0f; // Tamanho grande para o indicador
+    private static final Color COLOR_PHASE_TEXT = Color.YELLOW; // Cor de destaque (Amarelo ou Branco)
+
     // --- CONSTANTES (Caminhos de Assets) ---
     private static final String SKIN_PATH = "ui/uiskin.json";
     private static final String BG_PATH = "TelaDeJogoBackground.png";
@@ -79,6 +82,7 @@ public class TelaDeJogo {
     private TextButton btnObjetivo;
     private Image iconeJogador;
     private Label tropasLabel;
+    private Label phaseLabel;
 
     public TelaDeJogo(Runnable voltarParaMenu, ControladorDePartida controlador) {
         this.voltarParaMenu = voltarParaMenu;
@@ -272,6 +276,22 @@ public class TelaDeJogo {
     // --- UI CONSTRUCTION & LOGIC ---
 
     private void buildUIStage() {
+        //Table pra mostrar fase atual
+        Table topTable = new Table();
+        topTable.setFillParent(true);
+        topTable.top(); // Alinha tudo no topo da tela
+
+        phaseLabel = new Label("", skin);
+        phaseLabel.setFontScale(FONT_SCALE_PHASE);
+
+        // Adiciona sombra ou cor de destaque para leitura fácil sobre o mapa
+        phaseLabel.setColor(COLOR_PHASE_TEXT);
+
+        // Adiciona ao topo com um pouco de margem
+        topTable.add(phaseLabel).padTop(20f);
+
+        stage.addActor(topTable);
+
         Table uiTable = new Table();
         uiTable.setFillParent(true);
         uiTable.bottom();
@@ -450,6 +470,19 @@ public class TelaDeJogo {
         } else {
             tropasLabel.setVisible(false);
         }
+        String textoFase = "";
+        switch (controlador.getEstadoTurno()) {
+            case DISTRIBUINDO:
+                textoFase = "FASE DE DISTRIBUIÇÃO";
+                break;
+            case ATACANDO:
+                textoFase = "FASE DE ATAQUE";
+                break;
+            case MOVIMENTANDO:
+                textoFase = "FASE DE MOVIMENTAÇÃO";
+                break;
+        }
+        phaseLabel.setText(textoFase);
 
         // Botão Próxima Fase
         btnProximaFase.setDisabled(fase == EstadoTurno.DISTRIBUINDO && controlador.getTropasADistribuir() > 0);
