@@ -126,11 +126,16 @@ public class TelaDeJogo {
         return new InputAdapter() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                //Se for Ia jogador não interage
+                if (controlador.getJogadorAtual().getIsAI()) {
+                    return false;
+                }
+
                 Vector2 worldCoords = new Vector2(screenX, screenY);
                 stage.getViewport().unproject(worldCoords);
 
                 EstadoTurno fase = controlador.getEstadoTurno();
-                int indiceJogador = controlador.getJogadores().indexOf(controlador.getJogadorAtual());
+                //int indiceJogador = controlador.getJogadores().indexOf(controlador.getJogadorAtual());
 
                 // Detecta território clicado
                 Territorio territorioClicado = null;
@@ -153,16 +158,22 @@ public class TelaDeJogo {
                 // Debug (mantido da equipe)
                 logDebugAdjacencia(territorioClicado);
 
+                // Usa o metodo do controlador que corrige ID vs Index
+                Jogador donoDoTerritorio = controlador.getJogadorPorId(territorioClicado.getPlayerId());
+
+                // Compara objetos diretamente (muito mais seguro que índices)
+                boolean isMeuTerritorio = donoDoTerritorio.equals(controlador.getJogadorAtual());
+
                 // Delega a lógica baseada na fase
                 switch (fase) {
                     case DISTRIBUINDO:
-                        tratarCliqueDistribuicao(territorioClicado, button, indiceJogador);
+                        tratarCliqueDistribuicao(territorioClicado, button, isMeuTerritorio);
                         break;
                     case ATACANDO:
-                        tratarCliqueAtaque(territorioClicado, button, indiceJogador);
+                        tratarCliqueAtaque(territorioClicado, button, isMeuTerritorio);
                         break;
                     case MOVIMENTANDO:
-                        tratarCliqueMovimentacao(territorioClicado, button, indiceJogador);
+                        tratarCliqueMovimentacao(territorioClicado, button, isMeuTerritorio);
                         break;
                 }
                 return true;
@@ -170,9 +181,9 @@ public class TelaDeJogo {
         };
     }
 
-    private void tratarCliqueDistribuicao(Territorio t, int button, int indiceJogador) {
+    private void tratarCliqueDistribuicao(Territorio t, int button, boolean isMeuTerritorio) {
         if (button == Input.Buttons.LEFT) {
-            if (t.getPlayerId() - 1 == indiceJogador) {
+            if (isMeuTerritorio) {
                 mostrarDialogoMovimento(t, null, TipoMovimento.DISTRIBUICAO);
             } else {
                 Gdx.app.log(LOG_TAG, "Este território não é seu.");
@@ -180,7 +191,7 @@ public class TelaDeJogo {
         }
     }
 
-    private void tratarCliqueAtaque(Territorio t, int button, int indiceJogador) {
+    private void tratarCliqueAtaque(Territorio t, int button, boolean isMeuTerritorio) {
         if (button == Input.Buttons.RIGHT) {
             territorioAtacante = null;
             Gdx.app.log(LOG_TAG, "Ataque cancelado.");
@@ -191,14 +202,14 @@ public class TelaDeJogo {
 
         // 1. Selecionando Atacante
         if (territorioAtacante == null) {
-            if (t.getPlayerId() - 1 == indiceJogador && t.getTropas() > 1) {
+            if (isMeuTerritorio && t.getTropas() > 1) {
                 territorioAtacante = t;
                 Gdx.app.log(LOG_TAG, "Atacante selecionado: " + t.getNome());
             }
         }
         // 2. Selecionando Defensor
         else {
-            if (t.getPlayerId() - 1 != indiceJogador) {
+            if (!isMeuTerritorio) {
                 processarAtaque(t);
             } else {
                 // Troca de atacante (clicou em outro seu)
@@ -225,7 +236,7 @@ public class TelaDeJogo {
         }
     }
 
-    private void tratarCliqueMovimentacao(Territorio t, int button, int indiceJogador) {
+    private void tratarCliqueMovimentacao(Territorio t, int button, boolean isMeuTerritorio) {
         if (button == Input.Buttons.RIGHT) {
             territorioOrigemMovimento = null;
             Gdx.app.log(LOG_TAG, "Movimentação cancelada.");
@@ -237,7 +248,7 @@ public class TelaDeJogo {
         // 1. Selecionando Origem
         if (territorioOrigemMovimento == null) {
             int tropasIniciais = controlador.getTropasIniciaisMovimentacao(t);
-            if (t.getPlayerId() - 1 == indiceJogador && t.getTropas() > 1 && tropasIniciais > 1) {
+            if (isMeuTerritorio && t.getTropas() > 1 && tropasIniciais > 0) {
                 territorioOrigemMovimento = t;
                 Gdx.app.log(LOG_TAG, "Movimentação: Origem: " + t.getNome());
             } else {
@@ -246,7 +257,7 @@ public class TelaDeJogo {
         }
         // 2. Selecionando Destino
         else if (!territorioOrigemMovimento.equals(t)) {
-            if (t.getPlayerId() - 1 == indiceJogador) {
+            if (isMeuTerritorio) {
                 if (controlador.getMapa().isAdjacente(territorioOrigemMovimento, t)) {
                     Gdx.app.log(LOG_TAG, "Movimentação: Destino: " + t.getNome());
                     mostrarDialogoMovimento(territorioOrigemMovimento, t, TipoMovimento.ESTRATEGICO);
@@ -303,7 +314,8 @@ public class TelaDeJogo {
         banner.defaults().pad(0, 15, 0, 15); // Padding horizontal entre colunas
 
         // 1. Ícone Jogador
-        iconeJogador = new Image(drawHuman);
+        if(!controlador.getJogadorAtual().getIsAI()){ iconeJogador = new Image(drawHuman);}
+        else {iconeJogador = new Image(drawAI);}
         Image iconeBorda = new Image(drawIconBorder);
         iconeBorda.setColor(Color.BLACK);
 
@@ -454,6 +466,27 @@ public class TelaDeJogo {
         EstadoTurno fase = controlador.getEstadoTurno();
         if (jogador == null) return;
 
+        boolean isVezDaIA = jogador.getIsAI();
+
+        // Se for vez da IA, desabilita o botão de avançar fase
+        if (isVezDaIA) {
+            btnProximaFase.setDisabled(true);
+            btnProximaFase.setColor(Color.GRAY); // Opcional: deixar cinza
+            tropasLabel.setText("IA Jogando"); // Feedback visual
+        } else {
+            // Lógica normal para humano
+            btnProximaFase.setColor(Color.BLACK); // Ou PRETO, como definimos
+
+            if (fase == EstadoTurno.DISTRIBUINDO) {
+                tropasLabel.setText("Tropas: " + controlador.getTropasADistribuir());
+                tropasLabel.setVisible(true);
+                btnProximaFase.setDisabled(controlador.getTropasADistribuir() > 0);
+            } else {
+                tropasLabel.setVisible(false);
+                btnProximaFase.setDisabled(false);
+            }
+        }
+
         // Ícone
         if (jogador.getIsAI()) {
             iconeJogador.setDrawable(drawAI);
@@ -540,7 +573,7 @@ public class TelaDeJogo {
             int playerId = t.getPlayerId();
             // (Segurança: playerId começa em 1, lista em 0)
             if (playerId > 0 && playerId <= controlador.getJogadores().size()) {
-                Jogador dono = controlador.getJogadores().get(playerId - 1);
+                Jogador dono = controlador.getJogadorPorId(t.getPlayerId());
                 Color corDoJogador = dono.getCor().getGdxColor();
                 shapeRenderer.setColor(corDoJogador.r, corDoJogador.g, corDoJogador.b, 0.7f);
 

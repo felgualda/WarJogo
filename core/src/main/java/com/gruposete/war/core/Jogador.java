@@ -22,6 +22,7 @@ public class Jogador {
         this.cartas = new ArrayList<>();
         this.exercitosDisponiveis = 0;
         this.playerId = playerId;
+        this.isAI = isAI;
     }
 
     public void adicionarExercitosDisponiveis(int quantidade) {
@@ -107,5 +108,9 @@ public class Jogador {
 
     public boolean getIsAI() {
         return this.isAI;
+    }
+
+    public void setIsAI(boolean isAI) {
+        this.isAI = isAI;
     }
 }

@@ -54,27 +54,39 @@ public class ControladorDePartida {
      * sorteia objetivos e inicializa o baralho.
      */
     public void iniciarPartida() {
-        // 1. Setup Básico
         this.setupLogic = new SetupPartida(this.jogadores);
-        this.jogadores = setupLogic.getJogadoresPreparados();
-        this.territorios = setupLogic.getTodosOsTerritorios();
-        this.mapa = setupLogic.getMapaAdjacencias();
 
-        // 2. Inicialização de Sistemas
-        this.contadorGlobalDeTrocas = 0;
+        // 1. Pega a lista embaralhada
+        this.jogadores = setupLogic.getJogadoresPreparados();
+        this.territorios = setupLogic.getTodosOsTerritorios(); // Pega territórios AINDA com IDs antigos (se houver)
+
+        // 2. FORÇA A SINCRONIA: ID = Index + 1
+        for (int i = 0; i < this.jogadores.size(); i++) {
+            Jogador j = this.jogadores.get(i);
+            j.setPlayerId(i + 1); // Jogador no índice 0 vira ID 1
+
+            // 3. Atualiza os territórios desse jogador para o novo ID
+            for (Territorio t : j.getTerritorios()) {
+                t.setPlayerId(j.getPlayerId());
+            }
+        }
+
+        this.mapa = setupLogic.getMapaAdjacencias();
         BaralhoDeTroca.getInstance().inicializarBaralho(this.territorios);
         this.verificadorObjetivos = new VerificadorObjetivos(this.jogadores, this.territorios, this);
 
-        // 3. Configuração do Primeiro Turno
         this.indiceJogadorAtual = 0;
         this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
+
         this.estadoTurno = EstadoTurno.DISTRIBUINDO;
         this.conquistouTerritorioNesteTurno = false;
 
         calcularTropasDoTurno();
+    }
 
-        // Debug
-        imprimirObjetivosJogadores();
+    public Jogador getJogadorPorId(int id) {
+        if (id <= 0 || id > jogadores.size()) return null;
+        return jogadores.get(id - 1);
     }
 
     // --- CONTROLE DE FLUXO (TURNOS E FASES) ---
@@ -97,8 +109,17 @@ public class ControladorDePartida {
         this.conquistouTerritorioNesteTurno = false;
 
         calcularTropasDoTurno();
+        verificarTurnoIA();
     }
+    private void verificarTurnoIA() {
+        if (this.jogadorAtual.getIsAI()) { // Assumindo que Jogador tem isIA()
+            Gdx.app.log("Controlador", ">>> Turno da IA (" + jogadorAtual.getNome() + ") iniciado.");
 
+            // Cria e roda o Bot. Ele usará Timers para não travar o jogo.
+            IABot bot = new IABot(this, this.jogadorAtual);
+            bot.executarTurno();
+        }
+    }
     /**
      * Avança para a próxima fase dentro do turno de um jogador.
      */
@@ -200,8 +221,7 @@ public class ControladorDePartida {
         }
 
         // Prepara dados
-        int jogadorDefensorID = defensor.getPlayerId();
-        Jogador jogadorDefensor = jogadores.get(jogadorDefensorID - 1);
+        Jogador jogadorDefensor = getJogadorPorId(defensor.getPlayerId());
 
         // Executa lógica de dados
         AtaqueLogica logica = new AtaqueLogica(atacante, defensor, this.jogadorAtual, jogadorDefensor, this.mapa);
