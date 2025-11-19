@@ -54,36 +54,44 @@ public class ControladorDePartida {
      * sorteia objetivos e inicializa o baralho.
      */
     public void iniciarPartida() {
+        // 1. Setup Básico
         this.setupLogic = new SetupPartida(this.jogadores);
-
-        // 1. Pega a lista embaralhada
         this.jogadores = setupLogic.getJogadoresPreparados();
-        this.territorios = setupLogic.getTodosOsTerritorios(); // Pega territórios AINDA com IDs antigos (se houver)
+        this.territorios = setupLogic.getTodosOsTerritorios();
+        this.mapa = setupLogic.getMapaAdjacencias();
 
-        // 2. FORÇA A SINCRONIA: ID = Index + 1
+        // 2. FORÇA A SINCRONIA: ID = Index + 1 (Lógica Unificada)
         for (int i = 0; i < this.jogadores.size(); i++) {
-            Jogador j = this.jogadores.get(i);
-            j.setPlayerId(i + 1); // Jogador no índice 0 vira ID 1
-
-            // 3. Atualiza os territórios desse jogador para o novo ID
-            for (Territorio t : j.getTerritorios()) {
-                t.setPlayerId(j.getPlayerId());
+            this.jogadores.get(i).setPlayerId(i + 1);
+            for (Territorio t : this.jogadores.get(i).getTerritorios()) {
+                t.setPlayerId(i + 1);
             }
         }
 
-        this.mapa = setupLogic.getMapaAdjacencias();
+        // 3. Inicialização de Sistemas
+        this.contadorGlobalDeTrocas = 0;
         BaralhoDeTroca.getInstance().inicializarBaralho(this.territorios);
         this.verificadorObjetivos = new VerificadorObjetivos(this.jogadores, this.territorios, this);
 
+        // 4. Configuração do Primeiro Turno
         this.indiceJogadorAtual = 0;
         this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
-
         this.estadoTurno = EstadoTurno.DISTRIBUINDO;
         this.conquistouTerritorioNesteTurno = false;
 
         calcularTropasDoTurno();
+
+        // Debug
+        imprimirObjetivosJogadores();
+
+        // Verifica se o primeiro é IA
+        verificarTurnoIA();
     }
 
+    /**
+     * ÚNICO ponto de conversão de ID para Jogador.
+     * Garante que ID 1 = Index 0, ID 2 = Index 1, etc.
+     */
     public Jogador getJogadorPorId(int id) {
         if (id <= 0 || id > jogadores.size()) return null;
         return jogadores.get(id - 1);
@@ -111,15 +119,15 @@ public class ControladorDePartida {
         calcularTropasDoTurno();
         verificarTurnoIA();
     }
-    private void verificarTurnoIA() {
-        if (this.jogadorAtual.getIsAI()) { // Assumindo que Jogador tem isIA()
-            Gdx.app.log("Controlador", ">>> Turno da IA (" + jogadorAtual.getNome() + ") iniciado.");
 
-            // Cria e roda o Bot. Ele usará Timers para não travar o jogo.
+    private void verificarTurnoIA() {
+        if (this.jogadorAtual.getIsAI()) {
+            Gdx.app.log("Controlador", ">>> Turno da IA (" + jogadorAtual.getNome() + ") iniciado.");
             IABot bot = new IABot(this, this.jogadorAtual);
             bot.executarTurno();
         }
     }
+
     /**
      * Avança para a próxima fase dentro do turno de um jogador.
      */
@@ -142,7 +150,9 @@ public class ControladorDePartida {
                 // Tira snapshot das tropas para validar movimentação estratégica
                 tropasInicioMovimentacao.clear();
                 for (Territorio t : territorios) {
-                    if (t.getPlayerId() - 1 == jogadores.indexOf(jogadorAtual)) {
+                    // Uso da lógica unificada: Compara objeto Dono com Jogador Atual
+                    Jogador dono = getJogadorPorId(t.getPlayerId());
+                    if (dono.equals(this.jogadorAtual)) {
                         tropasInicioMovimentacao.put(t, t.getTropas());
                     }
                 }
@@ -165,11 +175,15 @@ public class ControladorDePartida {
     }
 
     public boolean alocarTropas(Territorio territorio, int quantidade) {
-        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
+        // Validação de Posse Unificada
+        Jogador dono = getJogadorPorId(territorio.getPlayerId());
+        if (!dono.equals(this.jogadorAtual)) {
+            Gdx.app.log("Controlador", "Alocação falhou: Território não é seu.");
+            return false;
+        }
 
-        // Validações
+        // Validações de Regra
         if (this.estadoTurno != EstadoTurno.DISTRIBUINDO) return false;
-        if (territorio.getPlayerId() - 1 != indiceJogador) return false;
         if (quantidade > this.tropasADistribuir) return false;
         if (quantidade < 1) return false;
 
@@ -198,12 +212,16 @@ public class ControladorDePartida {
         Gdx.app.log("Controlador", "Troca #" + this.contadorGlobalDeTrocas + " efetuada. Bônus: " + bonusExercitos);
 
         // 3. Aplicação de Bônus de Território e Remoção
-        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
         for (Carta carta : cartasSelecionadas) {
             Territorio t = carta.getTerritorio();
-            if (t != null && t.getPlayerId() - 1 == indiceJogador) {
-                t.setTropas(t.getTropas() + 2);
-                Gdx.app.log("Controlador", "Bônus de Território: +2 tropas em " + t.getNome());
+
+            // Validação de Posse Unificada
+            if (t != null) {
+                Jogador donoTerritorio = getJogadorPorId(t.getPlayerId());
+                if (donoTerritorio != null && donoTerritorio.equals(this.jogadorAtual)) {
+                    t.setTropas(t.getTropas() + 2);
+                    Gdx.app.log("Controlador", "Bônus de Território: +2 tropas em " + t.getNome());
+                }
             }
             this.jogadorAtual.getCartas().remove(carta);
         }
@@ -217,10 +235,10 @@ public class ControladorDePartida {
 
     public AtaqueEstado realizarAtaque(Territorio atacante, Territorio defensor) {
         if (this.estadoTurno != EstadoTurno.ATACANDO) {
-            // return AtaqueEstado.ERRO; // Opcional
+            // return AtaqueEstado.ERRO;
         }
 
-        // Prepara dados
+        // Lógica Unificada: Pega o defensor pelo ID
         Jogador jogadorDefensor = getJogadorPorId(defensor.getPlayerId());
 
         // Executa lógica de dados
@@ -276,33 +294,37 @@ public class ControladorDePartida {
      * Move tropas na fase de movimentação estratégica.
      */
     public boolean moverTropasEstrategicas(Territorio origem, Territorio destino, int tropasParaMover) {
-        int indiceJogador = this.jogadores.indexOf(this.jogadorAtual);
+        // Validação de Posse Unificada
+        Jogador donoOrigem = getJogadorPorId(origem.getPlayerId());
+        Jogador donoDestino = getJogadorPorId(destino.getPlayerId());
 
-        // Validação 1: Posse
-        if (origem.getPlayerId() - 1 != indiceJogador || destino.getPlayerId() - 1 != indiceJogador) return false;
+        if (!donoOrigem.equals(this.jogadorAtual) || !donoDestino.equals(this.jogadorAtual)) {
+            Gdx.app.log("Controlador", "Movimento falhou: Territórios não são seus.");
+            return false;
+        }
 
-        // Validação 2: Adjacência
+        // Validação de Adjacência
         if (!this.mapa.isAdjacente(origem, destino)) return false;
 
-        // Validação 3: Limite do Snapshot (Constraint 3)
+        // Validação de Snapshot
         Integer tropasIniciais = tropasInicioMovimentacao.get(origem);
         if (tropasIniciais == null) tropasIniciais = origem.getTropas();
 
-        int maxPermitidoPeloSnapshot = tropasIniciais; // Pode mover tudo que tinha, desde que sobre 1 no final
+        int maxPermitidoPeloSnapshot = tropasIniciais;
 
-        if (tropasParaMover > maxPermitidoPeloSnapshot) return false; // Tentou mover mais do que tinha no começo
-        if (tropasParaMover > (origem.getTropas() - 1)) return false; // Tentou deixar a origem vazia
-        if (tropasParaMover < 1) return false;
+        if (tropasParaMover > maxPermitidoPeloSnapshot) return false;
+        if (tropasParaMover > (origem.getTropas() - 1)) return false;
+        if (tropasParaMover < 0) return false;
 
         // Execução
         origem.setTropas(origem.getTropas() - tropasParaMover);
         destino.setTropas(destino.getTropas() + tropasParaMover);
 
-        // Atualiza o snapshot para movimentos futuros
+        // Atualiza o snapshot
         int novoLimite = tropasIniciais - tropasParaMover;
         tropasInicioMovimentacao.put(origem, novoLimite);
 
-        Gdx.app.log("Controlador", "Movimento estratégico: " + tropasParaMover + ". Novo limite origem: " + novoLimite);
+        Gdx.app.log("Controlador", "Movimento estratégico: " + tropasParaMover);
         return true;
     }
 
@@ -318,23 +340,16 @@ public class ControladorDePartida {
         }
     }
 
-    Jogador getEliminadorDe(Jogador jogadorEliminado) {
-        return historicoDeEliminacoes.get(jogadorEliminado);
-    }
-
     private void atualizarObjetivosAposEliminacao(Jogador eliminado, Jogador eliminador) {
         for (Jogador jogador : this.jogadores) {
             Objetivo objetivo = jogador.getObjetivo();
 
-            // Se o objetivo era eliminar quem morreu...
             if (objetivo.getTipo() == Objetivo.TipoDeObjetivo.ELIMINAR_JOGAOR &&
                 objetivo.getCorJogadorAlvo() == eliminado.getCor()) {
 
-                // ...e não foi este jogador que matou (foi um terceiro)
                 if (jogador != eliminador) {
                     Gdx.app.log("Controlador", "Objetivo alterado para " + jogador.getNome() + " (Alvo perdido).");
-                    // TODO: Mudar path da imagem para uma carta válida ou null
-                    Objetivo novoObjetivo = new Objetivo(99, "Conquistar 24 territorios", "assets/Carta/52.png", 24);
+                    Objetivo novoObjetivo = new Objetivo(99+jogador.getPlayerId(), "Conquistar 24 territorios", "assets/Carta/52.png", 24);
                     jogador.setObjetivo(novoObjetivo);
                 }
             }
@@ -344,7 +359,7 @@ public class ControladorDePartida {
     public Jogador verificarVitoria() {
         Jogador vencedor = verificadorObjetivos.verificarTodosObjetivos();
         if (vencedor != null) {
-            Gdx.app.log("Controlador", "🎉 VITÓRIA! " + vencedor.getNome() + " venceu.");
+            Gdx.app.log("Controlador", "VITÓRIA! " + vencedor.getNome() + " venceu.");
         }
         return vencedor;
     }
@@ -355,6 +370,10 @@ public class ControladorDePartida {
             String desc = (j.getObjetivo() != null) ? j.getObjetivo().getDescricao() : "SEM OBJETIVO";
             Gdx.app.log("DEBUG", j.getNome() + " (" + j.getCor() + "): " + desc);
         }
+    }
+
+    public Jogador getEliminadorDe(Jogador jogadorEliminado) {
+        return historicoDeEliminacoes.get(jogadorEliminado);
     }
 
     // --- GETTERS ---

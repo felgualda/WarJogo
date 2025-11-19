@@ -3,7 +3,7 @@ package com.gruposete.war.core;
 import java.util.Map;
 import java.util.HashMap;
 import com.badlogic.gdx.utils.Array;
-import java.util.List; 
+import java.util.List;
 import java.util.ArrayList;
 
 public class Mapa {
@@ -264,7 +264,7 @@ public class Mapa {
 
         Array<Territorio> moscouAdj = new Array<>();
         moscouAdj.add(tNomes.get("Suécia"));
-        alemanhaAdj.add(tNomes.get("Polônia"));
+        moscouAdj.add(tNomes.get("Polônia"));
         moscouAdj.add(tNomes.get("Aral"));
         moscouAdj.add(tNomes.get("Omsk"));
         moscouAdj.add(tNomes.get("Oriente Médio"));
@@ -273,7 +273,7 @@ public class Mapa {
         Array<Territorio> sueciaAdj = new Array<>();
         sueciaAdj.add(tNomes.get("Inglaterra"));
         sueciaAdj.add(tNomes.get("Moscou"));
-        sueciaAdj.add(tNomes.get("Alemanha"));
+        //sueciaAdj.add(tNomes.get("Alemanha")); NÃO CONECTA
         mapa.put(tNomes.get("Suécia"), sueciaAdj);
 
         // Ásia
@@ -291,10 +291,11 @@ public class Mapa {
         indiaAdj.add(tNomes.get("Aral"));
         indiaAdj.add(tNomes.get("China"));
         indiaAdj.add(tNomes.get("Vietnã"));
+        indiaAdj.add(tNomes.get("Sumatra"));
         mapa.put(tNomes.get("India"), indiaAdj);
 
         Array<Territorio> aralAdj = new Array<>();
-        aralAdj.add(tNomes.get("Polônia"));
+        //aralAdj.add(tNomes.get("Polônia"));
         aralAdj.add(tNomes.get("Moscou"));
         aralAdj.add(tNomes.get("Omsk"));
         aralAdj.add(tNomes.get("China"));
@@ -430,7 +431,7 @@ public class Mapa {
     public boolean isAdjacente(Territorio territorioA, Territorio territorioB){
         Array<Territorio> adj = adjacencias.get(territorioA);
         if (adj == null) return false;
-        
+
         for (Territorio t : adj){
             if (t.equals(territorioB)){
                 return true;

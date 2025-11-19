@@ -405,9 +405,10 @@ public class TelaDeJogo {
         int maxTropas = 0;
         String titulo = "";
         String textoDialogo = "";
-        final int minTropas = 1;
+        int minTropas = 0;
 
         if (tipo == TipoMovimento.ATAQUE) {
+            minTropas = 1;
             titulo = "Mover Tropas (Conquista)";
             int maxDisponivel = origem.getTropas() - 1;
             maxTropas = Math.min(3, maxDisponivel);
@@ -415,8 +416,7 @@ public class TelaDeJogo {
         }
         else if (tipo == TipoMovimento.ESTRATEGICO) {
             titulo = "Mover Tropas (Estratégico)";
-            int tropasIniciais = controlador.getTropasIniciaisMovimentacao(origem);
-            maxTropas = tropasIniciais - 1;
+            maxTropas = Math.min(controlador.getTropasIniciaisMovimentacao(origem),origem.getTropas() - 1);
             textoDialogo = "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
         }
         else { // DISTRIBUICAO

@@ -27,9 +27,9 @@ public class IABot {
     private static final float SCORE_ATAQUE_MINIMO = 2.0f; // Ratio mínimo para considerar um ataque viável
 
     // Tempos para simular "pensamento" (em segundos)
-    private static final float DELAY_DISTRIBUICAO = 1.0f;
-    private static final float DELAY_ATAQUE = 3.0f;
-    private static final float DELAY_MOVIMENTO = 3.0f;
+    private static final float DELAY_DISTRIBUICAO = 3.0f;
+    private static final float DELAY_ATAQUE = 6.0f;
+    private static final float DELAY_MOVIMENTO = 9.0f;
 
     public IABot(ControladorDePartida controlador, Jogador jogadorIA) {
         this.controlador = controlador;
@@ -112,43 +112,92 @@ public class IABot {
     }
 
     // ==================================================================================
-    //                                      FASE 2: DISTRIBUIÇÃO
+    //                                      FASE 2: DISTRIBUIÇÃO (NOVA LÓGICA)
     // ==================================================================================
 
     private void faseDistribuicao() {
-        // Garante que o controlador sabe que estamos nesta fase
-        // (Caso o Timer tenha atrasado ou algo assim, embora o controlador gerencie o estado)
-
-        int tropasDisponiveis = controlador.getTropasADistribuir();
-        Gdx.app.log("IA", "Distribuindo " + tropasDisponiveis + " tropas.");
+        Gdx.app.log("IA", "Distribuindo " + controlador.getTropasADistribuir() + " tropas.");
 
         while (controlador.getTropasADistribuir() > 0) {
-            // Recalcula scores a cada iteração para balancear a distribuição
-            Territorio melhorAtaque = getMelhorTerritorioPorScore(true);
-            Territorio melhorDefesa = getMelhorTerritorioPorScore(false);
 
-            float scoreAtk = (melhorAtaque != null) ? calcularScoreAtaque(melhorAtaque) : -1;
-            float scoreDef = (melhorDefesa != null) ? calcularScoreDefesa(melhorDefesa) : -1;
+            // 1. Calcule o território com melhor score de ataque
+            // (Usa o método helper existente que calcula basedo na força relativa)
+            Territorio melhorAtk = getMelhorTerritorioPorScore(true);
 
-            // Lógica de Decisão:
-            // Prioriza ataque se tiver um bom ratio (> 2.0), senão prioriza defesa
-            if (melhorAtaque != null && scoreAtk > scoreDef && scoreAtk > SCORE_ATAQUE_MINIMO) {
-                // Tenta colocar 1 tropa por vez para recalcular scores
-                controlador.alocarTropas(melhorAtaque, 1);
-            } else if (melhorDefesa != null) {
-                controlador.alocarTropas(melhorDefesa, 1);
+            boolean ataqueGarantido = false;
+
+            if (melhorAtk != null) {
+                // 2. Verifique se ele tem tropas > (3 * tropas do vizinho inimigo mais fraco)
+                Territorio vizinhoFraco = getVizinhoInimigoMaisFraco(melhorAtk);
+
+                if (vizinhoFraco != null) {
+                    int minhasTropas = melhorAtk.getTropas();
+                    int tropasInimigo = vizinhoFraco.getTropas();
+
+                    if (minhasTropas > (3 * tropasInimigo)) {
+                        ataqueGarantido = true;
+                    }
+                }
+            }
+
+            if (melhorAtk != null && !ataqueGarantido) {
+                // 3. Se não tiver a vantagem de 3x, aloca 1 no ataque
+                controlador.alocarTropas(melhorAtk, 1);
             } else {
-                // Fallback: coloca no território com mais tropas (reforça o forte)
-                Territorio t = getTerritorioComMaisTropas();
-                if (t != null) controlador.alocarTropas(t, 1);
-                else break; // Segurança
+                // 4. Se tiver vantagem (ou não tiver onde atacar), calcula Score de Defesa Novo
+                Territorio melhorDef = getMelhorTerritorioDefesaNovaFormula();
+
+                if (melhorDef != null) {
+                    controlador.alocarTropas(melhorDef, 1);
+                } else {
+                    // Fallback de segurança (se não tiver onde defender nem atacar)
+                    if (melhorAtk != null) controlador.alocarTropas(melhorAtk, 1);
+                    else break;
+                }
             }
         }
 
-        // Informa ao controlador para mudar de fase
         controlador.proximaFaseTurno();
     }
 
+    /**
+     * Calcula o melhor território para defesa usando a NOVA FÓRMULA:
+     * Total Tropas Inimigas * ((Total Aliados Vizinhos + 1) / Total Tropas No Territorio)
+     */
+    private Territorio getMelhorTerritorioDefesaNovaFormula() {
+        Territorio melhor = null;
+        float maiorScore = -1f;
+
+        for (Territorio t : eu.getTerritorios()) {
+            Array<Territorio> inimigos = mapa.getInimigosAdj(t);
+            if (inimigos.size == 0) continue; // Se não tem inimigo, score é 0, ignora
+
+            // Soma tropas inimigas vizinhas
+            int totalTropasInimigas = 0;
+            for (Territorio ini : inimigos) {
+                totalTropasInimigas += ini.getTropas();
+            }
+
+            // Total de territórios aliados vizinhos
+            int totalAliadosVizinhos = mapa.getAlidadosAdj(t).size;
+
+            // Minhas tropas atuais
+            int minhasTropas = t.getTropas();
+            if (minhasTropas == 0) minhasTropas = 1; // Evita divisão por zero (tecnicamente impossível no jogo, mas seguro)
+
+            // A FÓRMULA
+            float score = totalTropasInimigas * ((float)(totalAliadosVizinhos + 1) / minhasTropas);
+
+            // Adiciona pequeno fator aleatório para desempatar
+            score += MathUtils.random(0.01f);
+
+            if (score > maiorScore) {
+                maiorScore = score;
+                melhor = t;
+            }
+        }
+        return melhor;
+    }
     // ==================================================================================
     //                                      FASE 3: ATAQUE
     // ==================================================================================
@@ -222,55 +271,58 @@ public class IABot {
     // ==================================================================================
 
     private void faseMovimentacao() {
-        // A IA tenta fazer UMA movimentação estratégica para fortificar uma fronteira.
-        // Procura a melhor troca: Origem (Segura) -> Destino (Perigo)
+        int movimentosRealizados = 0;
 
-        Territorio melhorOrigem = null;
-        Territorio melhorDestino = null;
-        float maiorGanhoDefensivo = -999f;
+        // --- MUDANÇA: Limite de movimentos dinâmico ---
+        int maxMovimentos = eu.getTerritorios().size() * 2;
+        // ----------------------------------------------
 
-        for (Territorio origem : eu.getTerritorios()) {
-            // Regra: Só pode mover o que tinha no início da fase.
-            // O controlador tem um método 'getTropasIniciaisMovimentacao', mas a IA pode
-            // estimar simplesmente não movendo se tiver <= 1.
-            if (origem.getTropas() <= 1) continue;
+        while (movimentosRealizados < maxMovimentos) {
+            Territorio melhorOrigem = null;
+            Territorio melhorDestino = null;
+            float maiorGanho = -999f;
 
-            float scoreOrigem = calcularScoreDefesa(origem);
-            Array<Territorio> aliados = mapa.getAlidadosAdj(origem);
+            for (Territorio origem : eu.getTerritorios()) {
+                int creditoSnapshot = controlador.getTropasIniciaisMovimentacao(origem);
+                int atual = origem.getTropas();
 
-            for (Territorio destino : aliados) {
-                float scoreDestino = calcularScoreDefesa(destino);
+                // --- MUDANÇA: Só pula se crédito for 0 ou se não tiver sobra física ---
+                if (atual <= 1 || creditoSnapshot <= 0) continue;
 
-                // O ganho é: Tirar tropas de onde o score é baixo (0 = seguro)
-                // e colocar onde o score é alto (muitos inimigos)
-                float ganho = scoreDestino - scoreOrigem;
+                float scoreOrigem = calcularScoreDefesa(origem);
+                Array<Territorio> aliados = mapa.getAlidadosAdj(origem);
 
-                if (ganho > maiorGanhoDefensivo) {
-                    maiorGanhoDefensivo = ganho;
-                    melhorOrigem = origem;
-                    melhorDestino = destino;
+                for (Territorio destino : aliados) {
+                    float scoreDestino = calcularScoreDefesa(destino);
+                    float ganho = scoreDestino - scoreOrigem;
+
+                    if (ganho > maiorGanho) {
+                        maiorGanho = ganho;
+                        melhorOrigem = origem;
+                        melhorDestino = destino;
+                    }
                 }
             }
-        }
 
-        // Só move se valer a pena (diferença de perigo significativa)
-        if (melhorOrigem != null && melhorDestino != null && maiorGanhoDefensivo > 5.0f) {
-            // Pega o limite permitido pelo controlador (snapshot)
-            int limiteSnapshot = controlador.getTropasIniciaisMovimentacao(melhorOrigem);
-            int disponivelReal = melhorOrigem.getTropas();
+            if (melhorOrigem != null && melhorDestino != null && maiorGanho > 5.0f) {
+                int credito = controlador.getTropasIniciaisMovimentacao(melhorOrigem);
+                int disponivelFisico = melhorOrigem.getTropas() - 1;
 
-            // Move o máximo permitido (deixando 1)
-            int mover = Math.min(limiteSnapshot, disponivelReal) - 1;
+                // --- MUDANÇA: O máximo é o menor entre o Crédito e a Sobra Física ---
+                int maxMover = Math.min(credito, disponivelFisico);
 
-            if (mover > 0) {
-                Gdx.app.log("IA", "MOVIMENTO: " + mover + " tropas de " + melhorOrigem.getNome() + " (Seguro) para " + melhorDestino.getNome() + " (Perigo)");
-                controlador.moverTropasEstrategicas(melhorOrigem, melhorDestino, mover);
+                if (maxMover > 0) {
+                    // (Lógica de balanceamento opcional: mover metade ou tudo)
+                    // Aqui movemos tudo que é permitido para simplificar a correção
+                    controlador.moverTropasEstrategicas(melhorOrigem, melhorDestino, maxMover);
+                    movimentosRealizados++;
+                } else {
+                    break;
+                }
+            } else {
+                break;
             }
-        } else {
-            Gdx.app.log("IA", "Nenhuma movimentação estratégica vantajosa encontrada.");
         }
-
-        // Não precisa chamar proximaFaseTurno(), o Timer do executarTurno() chamará passarAVez()
     }
 
     // ==================================================================================
