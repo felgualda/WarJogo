@@ -116,6 +116,10 @@ public class ControladorDePartida {
         this.estadoTurno = EstadoTurno.DISTRIBUINDO;
         this.conquistouTerritorioNesteTurno = false;
 
+        if(this.jogadorAtual.getTerritorios().isEmpty()){
+            passarAVez();
+        }
+
         calcularTropasDoTurno();
         verificarTurnoIA();
     }

@@ -3,17 +3,14 @@ package com.gruposete.war;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.gruposete.war.core.*;
-import com.gruposete.war.ui.TelaDeConfig;
-import com.gruposete.war.ui.TelaDeJogo;
-import com.gruposete.war.ui.TelaDeRegras;
-import com.gruposete.war.ui.TelaInicial;
-import com.gruposete.war.ui.TelaDeSelecaoDeJogadores;
+import com.gruposete.war.ui.*;
 
 // Imports adicionados para a nova lógica de setup
 import com.badlogic.gdx.utils.Array;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Main extends ApplicationAdapter {
     private TelaInicial telaInicial;
@@ -21,9 +18,10 @@ public class Main extends ApplicationAdapter {
     private TelaDeJogo telaDeJogo; // A telaDeJogo agora começa null
     private TelaDeRegras telaDeRegras;
     private TelaDeConfig telaDeConfig;
+    private TelaVitoria telaVitoria;
 
 
-    private enum TelaAtiva { INICIAL, SELECAO, JOGO, REGRAS, CONFIG }
+    private enum TelaAtiva { INICIAL, SELECAO, JOGO, REGRAS, CONFIG, VITORIA }
     private TelaAtiva telaAtual;
 
     @Override
@@ -56,12 +54,37 @@ public class Main extends ApplicationAdapter {
                     telaDeJogo = null;
                 }
             };
+            Runnable voltarAoMenu = () -> {
+                telaAtual = TelaAtiva.INICIAL;
+                Gdx.input.setInputProcessor(telaInicial.stage);
+
+                // Limpa telas pesadas
+                if (telaDeJogo != null) { telaDeJogo.dispose(); telaDeJogo = null; }
+                if (telaVitoria != null) { telaVitoria.dispose(); telaVitoria = null; }
+            };
+
+            Consumer<Jogador> onVitoriaCallback = (vencedor) -> {
+                // 1. Descarta o jogo atual
+                if (telaDeJogo != null) {
+                    telaDeJogo.dispose();
+                    telaDeJogo = null;
+                }
+
+                // 2. Cria a tela de vitória com o vencedor recebido
+                telaVitoria = new TelaVitoria(voltarAoMenu, vencedor);
+
+                // 3. Muda o estado
+                telaAtual = TelaAtiva.VITORIA;
+                Gdx.input.setInputProcessor(telaVitoria.stage);
+            };
 
 // 5. Cria a TelaDeJogo passando SÓ o controlador
-            telaDeJogo = new TelaDeJogo(voltarCallback, controlador);
+            telaDeJogo = new TelaDeJogo(voltarCallback, onVitoriaCallback, controlador);
             telaAtual = TelaAtiva.JOGO;
             Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
         };
+
+
 
         // Callback para a TelaDeSelecao Voltar para a Inicial
         Runnable voltarParaInicialCallback = () -> {
@@ -130,6 +153,9 @@ public class Main extends ApplicationAdapter {
             case CONFIG:
                 telaDeConfig.render(delta);
                 break;
+            case VITORIA:
+                if (telaVitoria != null) telaVitoria.render(delta);
+                break;
         }
     }
 
@@ -142,6 +168,7 @@ public class Main extends ApplicationAdapter {
         // --- FIM DA MUDANÇA ---
         // Adicionada checagem para evitar crash
         if (telaDeJogo != null) telaDeJogo.resize(width, height);
+        if (telaVitoria != null) telaVitoria.resize(width, height);
         telaDeRegras.resize(width, height);
         telaDeConfig.resize(width, height);
     }
@@ -157,5 +184,6 @@ public class Main extends ApplicationAdapter {
         if (telaDeJogo != null) telaDeJogo.dispose();
         telaDeRegras.dispose();
         telaDeConfig.dispose();
+        if (telaVitoria != null) telaVitoria.dispose();
     }
 }

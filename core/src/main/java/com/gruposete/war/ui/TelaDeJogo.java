@@ -23,6 +23,9 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.*;
 import com.gruposete.war.core.ControladorDePartida.EstadoTurno;
 
+import com.badlogic.gdx.utils.Timer; // IMPORTANTE: Para limpar a IA
+import java.util.function.Consumer; // IMPORTANTE: Para o callback
+
 public class TelaDeJogo {
 
     // --- CONSTANTES (Configurações Globais da Tela) ---
@@ -57,6 +60,7 @@ public class TelaDeJogo {
     // --- CORE & LÓGICA ---
     private final ControladorDePartida controlador;
     private final Runnable voltarParaMenu;
+    private final Consumer<Jogador> vitoriaCallback;
     private final EarClippingTriangulator triangulator;
 
     // --- ESTADO LOCAL (Seleção) ---
@@ -84,10 +88,11 @@ public class TelaDeJogo {
     private Label tropasLabel;
     private Label phaseLabel;
 
-    public TelaDeJogo(Runnable voltarParaMenu, ControladorDePartida controlador) {
+    public TelaDeJogo(Runnable voltarParaMenu, Consumer<Jogador> vitoriaCallback, ControladorDePartida controlador) {
         this.voltarParaMenu = voltarParaMenu;
         this.controlador = controlador;
         this.triangulator = new EarClippingTriangulator();
+        this.vitoriaCallback = vitoriaCallback;
 
         // 1. Inicialização Gráfica
         this.stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
@@ -560,7 +565,13 @@ public class TelaDeJogo {
         // Checagem de Vitória
         Jogador vencedor = controlador.verificarVitoria();
         if (vencedor != null) {
-            // TODO: Transição para TelaVitoria
+            // Limpa qualquer IA que esteja rodando em background
+            Timer.instance().clear();
+
+            // Chama a Main para trocar de tela
+            if (vitoriaCallback != null) {
+                vitoriaCallback.accept(vencedor);
+            }
         }
     }
 
@@ -618,6 +629,7 @@ public class TelaDeJogo {
     }
 
     public void dispose() {
+        Timer.instance().clear();
         stage.dispose();
         skin.dispose();
         background.dispose();
