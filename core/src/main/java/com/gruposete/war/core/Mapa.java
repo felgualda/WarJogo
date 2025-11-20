@@ -102,6 +102,7 @@ public class Mapa {
         Array<Territorio> alaskaAdj = new Array<>();
         alaskaAdj.add(tNomes.get("Mackenzie"));
         alaskaAdj.add(tNomes.get("Vancouver"));
+        alaskaAdj.add(tNomes.get("Vladvostok"));
         mapa.put(tNomes.get("Alasca"), alaskaAdj);
 
         Array<Territorio> mackenzieAdj = new Array<>();
@@ -251,7 +252,7 @@ public class Mapa {
         alemanhaAdj.add(tNomes.get("Inglaterra"));
         alemanhaAdj.add(tNomes.get("França"));
         alemanhaAdj.add(tNomes.get("Polônia"));
-        alemanhaAdj.add(tNomes.get("Suécia"));
+        //alemanhaAdj.add(tNomes.get("Suécia"));
         mapa.put(tNomes.get("Alemanha"), alemanhaAdj);
 
         Array<Territorio> poloniaAdj = new Array<>();
@@ -360,6 +361,7 @@ public class Mapa {
         vladvostokAdj.add(tNomes.get("China"));
         vladvostokAdj.add(tNomes.get("Japão"));
         vladvostokAdj.add(tNomes.get("Sibéria"));
+        vladvostokAdj.add(tNomes.get("Alasca"));
         mapa.put(tNomes.get("Vladvostok"), vladvostokAdj);
 
         Array<Territorio> siberiaAdj = new Array<>();
