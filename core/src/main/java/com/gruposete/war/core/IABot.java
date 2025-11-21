@@ -24,9 +24,9 @@ public class IABot {
     private static final float FATOR_ATAQUE_ESMAGADOR = 4.0f;
 
     // Delays
-    private static final float DELAY_DISTRIBUICAO = 0.1f;
-    private static final float DELAY_ATAQUE = 0.2f;
-    private static final float DELAY_MOVIMENTO = 0.4f;
+    private static final float DELAY_DISTRIBUICAO = 0.03f;
+    private static final float DELAY_ATAQUE = 0.06f;
+    private static final float DELAY_MOVIMENTO = 0.1f;
 
     public IABot(ControladorDePartida controlador, Jogador jogadorIA) {
         this.controlador = controlador;

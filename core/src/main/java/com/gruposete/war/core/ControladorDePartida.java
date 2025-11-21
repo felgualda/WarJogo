@@ -102,23 +102,31 @@ public class ControladorDePartida {
     /**
      * Avança para o próximo jogador e reinicia o ciclo do turno.
      */
+    /**
+     * Avança para o próximo jogador VIVO e reinicia o ciclo do turno.
+     */
     public void passarAVez() {
         // Entrega carta se houve conquista
         if (this.conquistouTerritorioNesteTurno) {
             darCartaAoJogadorAtual();
         }
 
-        // Avança índice (circular)
-        this.indiceJogadorAtual = (this.indiceJogadorAtual + 1) % this.jogadores.size();
-        this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
+        // Avança para o próximo jogador VIVO (Loop seguro)
+        int loopSafety = 0;
+        do {
+            this.indiceJogadorAtual = (this.indiceJogadorAtual + 1) % this.jogadores.size();
+            this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
+
+            loopSafety++;
+            if (loopSafety > this.jogadores.size()) {
+                Gdx.app.error("Controlador", "ERRO CRÍTICO: Nenhum jogador vivo encontrado!");
+                return; // Evita travamento eterno
+            }
+        } while (this.jogadorAtual.getTerritorios().isEmpty());
 
         // Reseta estado
         this.estadoTurno = EstadoTurno.DISTRIBUINDO;
         this.conquistouTerritorioNesteTurno = false;
-
-        if(this.jogadorAtual.getTerritorios().isEmpty()){
-            passarAVez();
-        }
 
         calcularTropasDoTurno();
         verificarTurnoIA();
