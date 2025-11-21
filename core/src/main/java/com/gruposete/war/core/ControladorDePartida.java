@@ -388,6 +388,40 @@ public class ControladorDePartida {
         return historicoDeEliminacoes.get(jogadorEliminado);
     }
 
+    /**
+     * Transfere as cartas do jogador eliminado para o eliminador, respeitando o limite de 5 cartas.
+     * O excesso volta para o baralho.
+     */
+    private void transferirCartasDeEliminacao(Jogador eliminado, Jogador eliminador) {
+        List<Carta> cartasDaVitima = eliminado.getCartas();
+        List<Carta> maoDoEliminador = eliminador.getCartas();
+
+        // Se a vítima não tem cartas, não faz nada
+        if (cartasDaVitima.isEmpty()) return;
+
+        Gdx.app.log("Controlador", "Transferindo " + cartasDaVitima.size() + " cartas de " + eliminado.getNome() + " para " + eliminador.getNome());
+
+        List<Carta> sobras = new java.util.ArrayList<>();
+
+        // Tenta passar carta por carta
+        for (Carta c : cartasDaVitima) {
+            if (maoDoEliminador.size() < 4) {
+                maoDoEliminador.add(c);
+            } else {
+                sobras.add(c);
+            }
+        }
+
+        // Se houve sobras (mão cheia), devolve ao baralho
+        if (!sobras.isEmpty()) {
+            Gdx.app.log("Controlador", "Mão cheia! " + sobras.size() + " cartas devolvidas ao baralho.");
+            BaralhoDeTroca.getInstance().receberTroca(sobras);
+        }
+
+        // Limpa a mão do eliminado (segurança)
+        cartasDaVitima.clear();
+    }
+
     // --- GETTERS ---
 
     public List<Jogador> getJogadores() { return jogadores; }
