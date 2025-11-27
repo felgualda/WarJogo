@@ -8,114 +8,148 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class TelaInicial {
+
+    // --- CONSTANTES DE CONFIGURAÇÃO ---
+    private static final float VIEWPORT_WIDTH = 1280f;
+    private static final float VIEWPORT_HEIGHT = 720f;
+
+    // --- CONSTANTES DE CAMINHOS (ASSETS) ---
+    private static final String PATH_SKIN = "ui/uiskin.json";
+    private static final String PATH_BACKGROUND = "TelaInicialBackground.png";
+    private static final String PATH_LOGO = "logo.png";
+
+    // --- CONSTANTES DE LAYOUT (POSICIONAMENTO) ---
+    private static final float LOGO_X = 130f;
+    private static final float LOGO_Y = 460f;
+
+    private static final float BTN_WIDTH = 400f;
+    private static final float BTN_HEIGHT = 50f;
+    private static final float BTN_X = 120f;
+    private static final float BTN_START_Y = 360f;
+    private static final float BTN_SPACING = 80f;
+
+    private static final float FONT_SCALE = 2.0f;
+
+    // --- VARIÁVEIS DE CLASSE ---
     public Stage stage;
     private Skin skin;
     private Texture background;
-    private Runnable jogarCallback;
-    private Runnable regrasCallback;
-    private Runnable configCallback;
+    private Texture logoTexture; // Promovido a atributo para poder dar dispose
+
+    // Callbacks de navegação
+    private final Runnable jogarCallback;
+    private final Runnable regrasCallback;
+    private final Runnable configCallback;
 
     public TelaInicial(Runnable jogarCallback, Runnable regrasCallback, Runnable configCallback) {
         this.jogarCallback = jogarCallback;
         this.regrasCallback = regrasCallback;
         this.configCallback = configCallback;
 
-        stage = new Stage(new FitViewport(1280, 720));
+        // 1. Inicialização do Stage
+        stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
         Gdx.input.setInputProcessor(stage);
 
-        // Carrega skin e fundo
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
-        background = new Texture(Gdx.files.internal("TelaInicialBackground.png")); // coloque em assets/
+        // 2. Carregamento de Assets e Estilos
+        skin = new Skin(Gdx.files.internal(PATH_SKIN));
+        background = new Texture(Gdx.files.internal(PATH_BACKGROUND));
+        logoTexture = new Texture(Gdx.files.internal(PATH_LOGO));
 
-        Texture tituloTexture = new Texture(Gdx.files.internal("logo.png")); // coloque em assets/
-        Image tituloImage = new Image(tituloTexture);
+        TextButtonStyle styleGrande = criarEstiloBotao();
 
-        tituloImage.setPosition(130, 460);
+        // 3. Construção da UI
+        construirInterface(styleGrande);
+    }
 
-        //aumentar a fonte
-        BitmapFont fontGrande = new BitmapFont(); // fonte padrão
-        fontGrande.getData().setScale(2f); // aumenta 2x
+    /**
+     * Configura o estilo do botão (Fonte, Imagens).
+     */
+    private TextButtonStyle criarEstiloBotao() {
+        BitmapFont fontGrande = new BitmapFont(); // Fonte padrão
+        fontGrande.getData().setScale(FONT_SCALE);
 
-        TextButton.TextButtonStyle styleGrande = new TextButton.TextButtonStyle();
-        styleGrande.up = skin.getDrawable("buttonUp");    // drawable existente
-        styleGrande.down = skin.getDrawable("buttonDown");
-        styleGrande.over = skin.getDrawable("buttonOver");
-        styleGrande.font = fontGrande;
-        // Cria botões
-        TextButton btnJogar = new TextButton("Jogar", styleGrande);
-        TextButton btnConfigurar = new TextButton("Configurar", styleGrande);
-        TextButton btnRegras = new TextButton("Regras", styleGrande);
-        TextButton btnSair = new TextButton("Sair", styleGrande);
+        TextButtonStyle style = new TextButtonStyle();
+        style.up = skin.getDrawable("buttonUp");
+        style.down = skin.getDrawable("buttonDown");
+        style.over = skin.getDrawable("buttonOver");
+        style.font = fontGrande;
 
-        // Tamanho e posição
-        // Configurações de layout dos botões
-        float btnWidth = 400;
-        float btnHeight = 50;
-        float btnX = 120;
-        float btnYStart = 360;   // posição Y do primeiro botão
-        float btnSpacing = 80;   // espaço entre os botões
+        return style;
+    }
 
-        btnJogar.setSize(btnWidth, btnHeight);
-        btnJogar.setPosition(btnX, btnYStart);
+    /**
+     * Cria e posiciona todos os elementos visuais.
+     */
+    private void construirInterface(TextButtonStyle style) {
+        // --- Logo ---
+        Image tituloImage = new Image(logoTexture);
+        tituloImage.setPosition(LOGO_X, LOGO_Y);
+        stage.addActor(tituloImage);
 
-        btnConfigurar.setSize(btnWidth, btnHeight);
-        btnConfigurar.setPosition(btnX, btnYStart - btnSpacing);
+        // --- Botões ---
 
-        btnRegras.setSize(btnWidth, btnHeight);
-        btnRegras.setPosition(btnX, btnYStart - btnSpacing * 2);
-
-        btnSair.setSize(btnWidth, btnHeight);
-        btnSair.setPosition(btnX, btnYStart - btnSpacing * 3);
-
-        // Eventos
-        btnJogar.addListener(new ChangeListener() {
+        // Botão Jogar (Posição 0)
+        criarBotao("Jogar", 0, style, new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (jogarCallback != null) jogarCallback.run();
             }
         });
 
-        btnConfigurar.addListener(new ChangeListener() {
+        // Botão Configurar (Posição 1)
+        criarBotao("Configurar", 1, style, new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (configCallback != null) configCallback.run();
             }
         });
 
-        btnRegras.addListener(new ChangeListener() {
+        // Botão Regras (Posição 2)
+        criarBotao("Regras", 2, style, new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (regrasCallback != null) regrasCallback.run();
             }
         });
 
-        btnSair.addListener(new ChangeListener() {
+        // Botão Sair (Posição 3)
+        criarBotao("Sair", 3, style, new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 Gdx.app.exit();
             }
         });
-
-        // Adiciona ao stage
-        stage.addActor(tituloImage);
-        stage.addActor(btnJogar);
-        stage.addActor(btnConfigurar);
-        stage.addActor(btnRegras);
-        stage.addActor(btnSair);
     }
+
+    /**
+     * Método auxiliar para padronizar a criação e posicionamento dos botões.
+     */
+    private void criarBotao(String texto, int indice, TextButtonStyle style, ChangeListener listener) {
+        TextButton btn = new TextButton(texto, style);
+        btn.setSize(BTN_WIDTH, BTN_HEIGHT);
+
+        // Calcula a posição Y baseada no índice (0, 1, 2, 3)
+        float posY = BTN_START_Y - (BTN_SPACING * indice);
+        btn.setPosition(BTN_X, posY);
+
+        btn.addListener(listener);
+        stage.addActor(btn);
+    }
+
+    // --- CICLO DE VIDA ---
 
     public void render(float delta) {
         // Desenha o fundo
         stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(),
-            stage.getViewport().getWorldHeight());
+        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
         stage.getBatch().end();
 
-        // Atualiza e desenha stage
+        // Atualiza e desenha a UI
         stage.act(delta);
         stage.draw();
     }
@@ -128,5 +162,6 @@ public class TelaInicial {
         stage.dispose();
         skin.dispose();
         background.dispose();
+        logoTexture.dispose(); // Dispose adicionado para evitar vazamento de memória
     }
 }
