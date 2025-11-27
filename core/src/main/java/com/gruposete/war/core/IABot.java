@@ -19,7 +19,7 @@ public class IABot {
     private final Jogador eu;
     private final Mapa mapa;
 
-    // Behavior Constants
+    // Constantes de comportamemnto da IA
     private static final float FATOR_DEFESA_ALIADOS = 2.0f;
     private static final float FATOR_ATAQUE_ESMAGADOR = 4.0f;
 
@@ -57,7 +57,7 @@ public class IABot {
         }, DELAY_MOVIMENTO);
     }
 
-    // --- PHASE 1: CARDS ---
+    // --- FASE 1 DA IA: TROCA ---
     private void tentaTrocarCartas() {
         List<Carta> mao = eu.getCartas();
         if (mao.size() < 3) return;
@@ -76,41 +76,100 @@ public class IABot {
         }
     }
 
-    // --- PHASE 2: DISTRIBUTION ---
+    // --- FASE 2 DISTRIBUIÇÂO ---
     private void faseDistribuicao() {
-        Gdx.app.log("IA", "Distribuindo " + controlador.getTropasADistribuir() + " tropas.");
 
-        while (controlador.getTropasADistribuir() > 0) {
-            Territorio melhorAtk = getMelhorTerritorioAtaqueAllIn(controlador.getTropasADistribuir());
-            boolean ataqueGarantido = false;
+        Gdx.app.log("IA", "Iniciando Distribuição. Total Geral: " + controlador.getTropasADistribuirTotal());
 
-            if (melhorAtk != null) {
-                Territorio vizinhoFraco = getVizinhoInimigoMaisFraco(melhorAtk);
-                // 3x advantage rule to focus purely on attack
-                if (vizinhoFraco != null && melhorAtk.getTropas() > (3 * vizinhoFraco.getTropas())) {
-                    ataqueGarantido = true;
-                }
+        int safetyCounter = 0;
+
+        while (controlador.getTropasADistribuirTotal() > 0) {
+
+            safetyCounter++;
+            if (safetyCounter > 300) {
+                Gdx.app.log("IA", "ALERTA: Loop de distribuição travou. Forçando saída.");
+                break;
             }
 
-            if (melhorAtk != null && !ataqueGarantido) {
-                controlador.alocarTropas(melhorAtk, 1);
-            } else {
-                Territorio melhorDef = getMelhorTerritorioDefesaNovaFormula();
+            String restricao = controlador.getRestricaoAtual();
+
+            if (restricao != null) {
+
+                Territorio melhorDef = getMelhorTerritorioDefesaNovaFormula(restricao);
+
                 if (melhorDef != null) {
                     controlador.alocarTropas(melhorDef, 1);
                 } else {
-                    break; // No enemies found
+                    alocarFallbackRestrito(restricao);
+                }
+
+            } else {
+
+                int tropasNoLote = controlador.getTropasADistribuir();
+                Territorio melhorAtk = getMelhorTerritorioAtaqueAllIn(tropasNoLote);
+                boolean ataqueGarantido = false;
+
+                if (melhorAtk != null) {
+                    Territorio vizinhoFraco = getVizinhoInimigoMaisFraco(melhorAtk);
+                    if (vizinhoFraco != null && melhorAtk.getTropas() > (3 * vizinhoFraco.getTropas())) {
+                        ataqueGarantido = true;
+                    }
+                }
+
+                if (melhorAtk != null && !ataqueGarantido) {
+                    controlador.alocarTropas(melhorAtk, 1);
+                } else {
+                    Territorio melhorDef = getMelhorTerritorioDefesaNovaFormula(null);
+
+                    if (melhorDef != null) {
+                        controlador.alocarTropas(melhorDef, 1);
+                    } else {
+                        Territorio t = getTerritorioComMaisTropas();
+                        if (t != null) controlador.alocarTropas(t, 1);
+                    }
                 }
             }
         }
         controlador.proximaFaseTurno();
     }
 
-    private Territorio getMelhorTerritorioDefesaNovaFormula() {
+    private Territorio getTerritorioComMaisTropas() {
+        Territorio melhor = null;
+        int maior = -1;
+
+        for (Territorio t : eu.getTerritorios()) {
+            if (t.getTropas() > maior) {
+                maior = t.getTropas();
+                melhor = t;
+            }
+        }
+
+        return melhor;
+    }
+
+
+    private void alocarFallbackRestrito(String continenteNome) {
+        for (Territorio t : eu.getTerritorios()) {
+            if (t.getContinente().equalsIgnoreCase(continenteNome)) {
+                controlador.alocarTropas(t, 1);
+                return;
+            }
+        }
+
+        if (!eu.getTerritorios().isEmpty()) {
+            controlador.alocarTropas(eu.getTerritorios().get(0), 1);
+        }
+    }
+
+    private Territorio getMelhorTerritorioDefesaNovaFormula(String filtroContinente) {
         Territorio melhor = null;
         float maiorScore = -1f;
 
         for (Territorio t : eu.getTerritorios()) {
+            if (filtroContinente != null && !t.getContinente().equalsIgnoreCase(filtroContinente)) {
+                continue;
+            }
+
             Array<Territorio> inimigos = mapa.getInimigosAdj(t);
             if (inimigos.size == 0) continue;
 
@@ -119,7 +178,6 @@ public class IABot {
             int totalAliados = mapa.getAlidadosAdj(t).size;
             int minhas = Math.max(1, t.getTropas());
 
-            // Formula: Enemies * ((Allies+1) / (MyTroops*3))
             float score = totalInimigos * ((float)(totalAliados + 1) / (minhas * 3));
             score += MathUtils.random(0.01f);
 
@@ -151,7 +209,8 @@ public class IABot {
         return melhor;
     }
 
-    // --- PHASE 3: ATTACK ---
+
+    // --- FASE # ATAQUE ---
     private void faseAtaque() {
         boolean conquistouCarta = false;
         List<Territorio> ofensivos = new ArrayList<>();
@@ -160,7 +219,7 @@ public class IABot {
             if (t.getTropas() > 1) ofensivos.add(t);
         }
 
-        // Sort by advantage (easier battles first)
+        // Ordenar pela maior vantagem
         ofensivos.sort((t1, t2) -> Integer.compare(getVantagemSobreVizinhoMaisFraco(t2), getVantagemSobreVizinhoMaisFraco(t1)));
 
         for (Territorio origem : ofensivos) {
@@ -169,7 +228,7 @@ public class IABot {
             Territorio alvo = getVizinhoInimigoMaisFraco(origem);
             if (alvo == null) continue;
 
-            // Decision logic: Aggressive vs Conservative
+            // Logica de decisão: Agressivo até conseguir carta, dps só com vantagem
             boolean atacar = (!conquistouCarta) ? (origem.getTropas() > alvo.getTropas())
                 : (origem.getTropas() >= alvo.getTropas() * FATOR_ATAQUE_ESMAGADOR);
 
@@ -177,7 +236,7 @@ public class IABot {
                 Gdx.app.log("IA", "ATAQUE: " + origem.getNome() + " -> " + alvo.getNome());
 
                 while (origem.getTropas() > 1) {
-                    // Stop condition based on current mode
+                    // Condição de parada
                     if (!conquistouCarta) {
                         if (origem.getTropas() <= alvo.getTropas()) break;
                     } else {
@@ -190,7 +249,7 @@ public class IABot {
                         conquistouCarta = true;
                         int disponivel = origem.getTropas() - 1;
 
-                        // Post-conquest move logic
+                        // Movimentação
                         int mover = (!conquistouCarta) ? 3 : Math.min(disponivel / 2, 3);
                         mover = MathUtils.clamp(mover, 1, disponivel);
 
@@ -221,12 +280,12 @@ public class IABot {
         return fraco;
     }
 
-    // --- PHASE 4: MOVEMENT (Diffusion) ---
+    // --- Fase 4, Difusão de tropas para as fronteiras ---
     private void faseMovimentacao() {
         Gdx.app.log("IA", "--- Fase de Movimentação ---");
         Map<Territorio, DadosTerritorio> mapaDados = analisarTerreno();
 
-        // Sort: Interior (High Dist) -> Front (Dist 0)
+        // Ordena: Interior (Distancia grande) e Fronteira (Distancia 0)
         List<Territorio> meusTerritorios = new ArrayList<>(eu.getTerritorios());
         meusTerritorios.sort((t1, t2) -> Integer.compare(mapaDados.get(t2).distanciaAoFront, mapaDados.get(t1).distanciaAoFront));
 
@@ -284,7 +343,6 @@ public class IABot {
         float totalPerigo = dadosOrigem.perigoBase;
         int totalTropas = origem.getTropas();
 
-        // Gather local front group
         for (Territorio vizinho : vizinhos) {
             DadosTerritorio dadosVizinho = mapaDados.get(vizinho);
             if (dadosVizinho.distanciaAoFront == 0) {
@@ -300,7 +358,7 @@ public class IABot {
         float meuRatio = (float) origem.getTropas() / Math.max(1.0f, dadosOrigem.perigoBase);
         if (meuRatio <= ratioAlvo) return;
 
-        // Calculate deficits
+        // Calcula deficit de tropa
         Map<Territorio, Integer> demandas = new HashMap<>();
         int demandaTotal = 0;
         for (Territorio vizinho : grupoFront) {
@@ -312,7 +370,7 @@ public class IABot {
             }
         }
 
-        // Distribute
+        // Distribui
         if (demandaTotal > 0) {
             int tropasNaMao = qtdDisponivel;
             for (Map.Entry<Territorio, Integer> entry : demandas.entrySet()) {
@@ -329,7 +387,7 @@ public class IABot {
         }
     }
 
-    // --- MAPPING (BFS) ---
+    // --- MAPEIA (Busca em largura) ---
     private Map<Territorio, DadosTerritorio> analisarTerreno() {
         Map<Territorio, DadosTerritorio> dados = new HashMap<>();
         List<Territorio> meusTerritorios = eu.getTerritorios();
@@ -339,7 +397,7 @@ public class IABot {
             dados.put(t, new DadosTerritorio(t));
         }
 
-        // 1. Identify Fronts
+        // 1. Identifica as fronteira
         for (Territorio t : meusTerritorios) {
             Array<Territorio> inimigos = mapa.getInimigosAdj(t);
             if (inimigos.size > 0) {
@@ -350,7 +408,7 @@ public class IABot {
             }
         }
 
-        // 2. BFS Distances
+        // 2. BFS Distancias
         while (!fila.isEmpty()) {
             Territorio atual = fila.poll();
             DadosTerritorio dadosAtual = dados.get(atual);

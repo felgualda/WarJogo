@@ -1,62 +1,48 @@
-// core/ServicoDeReforco.java (NOVA CLASSE)
-
 package com.gruposete.war.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import com.badlogic.gdx.utils.Array;
 
 public class ServicoDeReforco {
 
-    public static int calcularTotalReforcos(Jogador jogador, Mapa mapa) {
-        int totalReforcos = 0;
+    /**
+     * Calcula todos os reforços do turno, separando por restrições de continente.
+     * Retorna uma lista (fila) de lotes para o Controlador gerenciar.
+     */
+    public static List<LoteReforco> calcularReforcos(Jogador jogador, Mapa mapa) {
+        List<LoteReforco> filaDeReforcos = new ArrayList<>();
 
-        int numTerritorios = jogador.getTerritorios().size();
-
-        System.out.println("Total de territorios" + numTerritorios);
-        
-        int bonusTerritorios = (int) Math.floor(numTerritorios / 3.0);
-        
-        //System.out.println("Total de bonusterritorios" + bonusTerritorios);
-
-        // O jogador recebe no mínimo 3 territórios
-        if (bonusTerritorios < 3) {
-            bonusTerritorios = 3;
-        }
-        totalReforcos += bonusTerritorios;
-
-        //System.out.println("Total de totalreforços" + totalReforcos);
-
-        // Bônus por continente
-        totalReforcos += calcularBonusContinentes(jogador, mapa);
-
-        //System.out.println("Total de reforcosbase pos contineente" + totalReforcos);
-
-        // O total deve ser adicionado ao jogador no Controller:
-        // jogador.adicionarExercitosDisponiveis(totalReforcos);
-        
-        return totalReforcos;
-    }
-
-    // Calcula bônus por continente dominado
-    private static int calcularBonusContinentes(Jogador jogador, Mapa mapa) {
-        int bonusTotal = 0;
-        
+        // 1. Bônus por Continente (Prioridade: Restritos primeiro)
         Map<Continente, List<Territorio>> mapaContinentes = mapa.getTerritoriosPorContinente();
 
         for (Map.Entry<Continente, List<Territorio>> entry : mapaContinentes.entrySet()) {
-            Continente cont = entry.getKey();
+            Continente continente = entry.getKey();
             List<Territorio> territoriosDoContinente = entry.getValue();
 
-            // Verifica se o jogador domina a totalidade dos territórios do continente.
+            // Verifica se o jogador possui todos os territórios do continente (pelo ID)
             boolean domina = territoriosDoContinente.stream()
                 .allMatch(t -> t.getPlayerId() == jogador.getPlayerId());
 
             if (domina) {
-                // Adiciona o bônus de exércitos por continente dominado
-                bonusTotal += cont.getBonusExercitos();
+                filaDeReforcos.add(new LoteReforco(continente.getBonusExercitos(), continente));
             }
         }
-        return bonusTotal;
+
+        // 2. Reforço Base Global (Sem restrição)
+        int numTerritorios = jogador.getTerritorios().size();
+
+        // Regra padrão War: Total / 2 (Arredondado para baixo). Mínimo de 3.
+        int bonusBase = numTerritorios / 3;
+
+        if (bonusBase < 3) {
+            bonusBase = 3;
+        }
+
+        // Adiciona o lote global (restricao = null)
+        filaDeReforcos.add(new LoteReforco(bonusBase, null));
+
+        return filaDeReforcos;
     }
 }

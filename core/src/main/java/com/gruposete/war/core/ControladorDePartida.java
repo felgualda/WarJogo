@@ -6,6 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gruposete.war.core.LoteReforco;
+import java.util.Queue;
+import java.util.LinkedList;
+
 /**
  * Gerencia o estado da partida, fluxo de turnos, regras de negócio e condições de vitória.
  * Atua como o "cérebro" central do jogo.
@@ -28,7 +32,7 @@ public class ControladorDePartida {
     private int indiceJogadorAtual;
     private Jogador jogadorAtual;
     private EstadoTurno estadoTurno;
-    private int tropasADistribuir;
+    private Queue<LoteReforco> filaDeReforcos = new LinkedList<>();
     private boolean conquistouTerritorioNesteTurno;
 
     // --- REGRAS E LÓGICA AUXILIAR ---
@@ -150,7 +154,7 @@ public class ControladorDePartida {
                     Gdx.app.log("Controlador", "Troca obrigatória. Não pode avançar.");
                     return;
                 }
-                if (this.tropasADistribuir > 0) {
+                if (this.getTropasADistribuir() > 0) {
                     Gdx.app.log("Controlador", "Ainda há tropas para distribuir.");
                     return;
                 }
@@ -179,33 +183,74 @@ public class ControladorDePartida {
     // --- AÇÕES DO JOGADOR: DISTRIBUIÇÃO E TROCA ---
 
     private void calcularTropasDoTurno() {
-        int reforcosBase = ServicoDeReforco.calcularTotalReforcos(this.jogadorAtual, this.mapa);
-        this.jogadorAtual.setExercitosDisponiveis(reforcosBase);
-        this.tropasADistribuir = this.jogadorAtual.getExercitosDisponiveis();
+        // 1. Calcula os lotes (Bônus Continentes + Global)
+        List<LoteReforco> lotes = ServicoDeReforco.calcularReforcos(this.jogadorAtual, this.mapa);
 
-        Gdx.app.log("Controlador", "Jogador " + jogadorAtual.getNome() + " recebe " + tropasADistribuir + " tropas.");
+        // 2. Preenche a fila
+        this.filaDeReforcos.clear();
+        this.filaDeReforcos.addAll(lotes);
+
+        // Log para debug
+        int total = 0;
+        for (LoteReforco lote : lotes) {
+            total += lote.quantidade;
+            String tipo = (lote.restricao != null) ? lote.restricao.getNome() : "Livre";
+            Gdx.app.log("Controlador", "Lote recebido: " + lote.quantidade + " tropas para " + tipo);
+        }
+        Gdx.app.log("Controlador", "Total do turno: " + total);
     }
 
     public boolean alocarTropas(Territorio territorio, int quantidade) {
-        // Validação de Posse Unificada
+        // Validação de posse
         Jogador dono = getJogadorPorId(territorio.getPlayerId());
         if (!dono.equals(this.jogadorAtual)) {
             Gdx.app.log("Controlador", "Alocação falhou: Território não é seu.");
             return false;
         }
 
-        // Validações de Regra
+        // Validação de fase
         if (this.estadoTurno != EstadoTurno.DISTRIBUINDO) return false;
-        if (quantidade > this.tropasADistribuir) return false;
+
+        // Lote atual da fila
+        LoteReforco loteAtual = this.filaDeReforcos.peek();
+        if (loteAtual == null) return false;
+
+        // Validação de quantidade
+        if (quantidade > loteAtual.quantidade) {
+            Gdx.app.log("Controlador", "Alocação falhou: Quantidade excede o lote atual (" + loteAtual.quantidade + ").");
+            return false;
+        }
         if (quantidade < 1) return false;
 
-        // Execução
+        // Validação de restrição por continente
+        if (loteAtual.restricao != null) {
+            String continenteTerritorio = territorio.getContinente();
+            String continenteRestricao = loteAtual.restricao.getNome();
+            Gdx.app.log("Controlador",continenteTerritorio);
+            Gdx.app.log("Controlador",continenteRestricao);
+            if (!continenteTerritorio.equalsIgnoreCase(continenteRestricao)) {
+                Gdx.app.log("Controlador", "Alocação falhou: Este bônus é exclusivo para " + continenteRestricao);
+                return false;
+            }
+        }
+
+        // Execução: adiciona tropas
         territorio.setTropas(territorio.getTropas() + quantidade);
-        this.tropasADistribuir -= quantidade;
+
+        // Atualiza o lote (assumindo que 'quantidade' não é final)
+        loteAtual.quantidade -= quantidade;
 
         Gdx.app.log("Controlador", "Alocou " + quantidade + " em " + territorio.getNome());
+
+        // Remove lote se acabou
+        if (loteAtual.quantidade <= 0) {
+            this.filaDeReforcos.poll();
+            Gdx.app.log("Controlador", "Lote finalizado. Passando para o próximo.");
+        }
+
         return true;
     }
+
 
     public boolean tentarTrocaDeCartas(List<Carta> cartasSelecionadas) {
         if (cartasSelecionadas == null || cartasSelecionadas.size() != 3) return false;
@@ -219,7 +264,23 @@ public class ControladorDePartida {
         // 2. Cálculo de Bônus
         this.contadorGlobalDeTrocas++;
         int bonusExercitos = ServicoDeCartas.calcularBonusTroca(this.contadorGlobalDeTrocas);
-        this.tropasADistribuir += bonusExercitos;
+
+// Procura um lote sem restrição
+        LoteReforco loteSemRestricao = null;
+        for (LoteReforco lote : this.filaDeReforcos) {
+            if (lote.restricao == null) {
+                loteSemRestricao = lote;
+                break;
+            }
+        }
+
+        if (loteSemRestricao != null) {
+            // Adiciona tropas ao lote existente
+            loteSemRestricao.quantidade += bonusExercitos;
+        } else {
+            // Se não existe nenhum lote livre, cria um novo (opcional)
+            this.filaDeReforcos.offer(new LoteReforco(bonusExercitos, null));
+        }
 
         Gdx.app.log("Controlador", "Troca #" + this.contadorGlobalDeTrocas + " efetuada. Bônus: " + bonusExercitos);
 
@@ -429,9 +490,29 @@ public class ControladorDePartida {
     public Mapa getMapa() { return mapa; }
     public Jogador getJogadorAtual() { return jogadorAtual; }
     public EstadoTurno getEstadoTurno() { return estadoTurno; }
-    public int getTropasADistribuir() { return tropasADistribuir; }
+
+    public int getTropasADistribuir() {
+        LoteReforco lote = filaDeReforcos.peek();
+        return (lote != null) ? lote.quantidade : 0;
+    }
+    public int getTropasADistribuirTotal() {
+        int total = 0;
+
+        for (LoteReforco lote : filaDeReforcos) {
+            total += lote.quantidade;
+        }
+
+        return total;
+    }
 
     public int getTropasIniciaisMovimentacao(Territorio t) {
         return tropasInicioMovimentacao.getOrDefault(t, t.getTropas());
+    }
+    public String getRestricaoAtual() {
+        LoteReforco lote = filaDeReforcos.peek();
+        if (lote != null && lote.restricao != null) {
+            return lote.restricao.getNome();
+        }
+        return null; // Sem restrição (Global)
     }
 }

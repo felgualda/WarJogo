@@ -483,7 +483,7 @@ public class TelaDeJogo {
             btnProximaFase.setColor(Color.BLACK); // Ou PRETO, como definimos
 
             if (fase == EstadoTurno.DISTRIBUINDO) {
-                tropasLabel.setText("Tropas: " + controlador.getTropasADistribuir());
+                tropasLabel.setText("Tropas: " + controlador.getTropasADistribuirTotal());
                 tropasLabel.setVisible(true);
                 btnProximaFase.setDisabled(controlador.getTropasADistribuir() > 0);
             } else {

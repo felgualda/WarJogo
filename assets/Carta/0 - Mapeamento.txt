@@ -5,62 +5,62 @@
 
 **3-9: Europa**
 
-3- Alemanha	
-4- França						
-5- Inglaterra						  
-6- Islândia						  
-7- Moscou						   
-8- Polônia						  
-9- Suécia						   
+3- Alemanha -C
+4- França -Q
+5- Inglaterra -C
+6- Islândia -T
+7- Moscou -T
+8- Polônia -Q
+9- Suécia -C
 
-**10-13: América do Sul**					  
+**10-13: América do Sul**
 
-10- Argentina						
-11- Brasil						   
-12- Peru						   
-13- Venezuela					   
+10- Argentina -Q
+11- Brasil -C
+12- Peru -T
+13- Venezuela -T
 
-**14-19: África**						  
+**14-19: África**
 
-14- África do Sul					  
-15- Argélia						
-16- Congo						   
-17- Egito						
-18- Madagascar					  
-19- Sudão					 
+14- África do Sul -T
+15- Argélia -C
+16- Congo -Q
+17- Egito -T
+18- Madagascar -C
+19- Sudão -Q
 
 **20-23: Oceania**
 
- 20- Austrália
-21- Borneo
-22- Nova Guiné
-23- Sumatra
+ 20- Austrália -T
+21- Borneo -Q
+22- Nova Guiné -C
+23- Sumatra -Q
 
 **24-32: América do Norte**
 
-24- Alasca
-25- Califórnia
-26- Groenlândia
-27- Labrador
-28- Mackenzie
-29- México
-30- Nova Iorque
-31- Ottawa
-32- Vancouver
+24- Alasca -T
+25- Califórnia -Q
+26- Groenlândia -C
+27- Labrador -Q
+28- Mackenzie -C
+29- México -Q
+30- Nova Iorque -T
+31- Ottawa -C
+32- Vancouver -T
  
 **33-44: Ásia**
-33- Aral
-34- China
-35- Dudinka
-36- índia
-37- Mongólia
-38- Omsk
-39- Oriente Médio
-40- Sibéria
-41- Tchita
-42- Vietnã
-43- Vladvostok
-44- Japão
+33- Aral -T
+34- China -C
+35- Dudinka -C
+36- índia -Q
+37- Mongólia -C
+38- Omsk -Q
+39- Oriente Médio -Q
+40- Sibéria -T
+41- Tchita -T
+42- Vietnã -T
+43- Vladvostok -C
+44- Japão -T
 
 **45-58: Cartas Objetivo**
 
