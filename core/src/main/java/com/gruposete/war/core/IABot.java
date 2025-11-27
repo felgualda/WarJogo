@@ -42,7 +42,7 @@ public class IABot {
         Timer.schedule(new Timer.Task() {
             @Override public void run() { faseDistribuicao(); }
         }, DELAY_DISTRIBUICAO);
-
+        if (controlador.isPrimeiraRodada()) return;
         Timer.schedule(new Timer.Task() {
             @Override public void run() { faseAtaque(); }
         }, DELAY_ATAQUE);

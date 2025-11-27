@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.gruposete.war.core.LoteReforco;
 import java.util.Queue;
 import java.util.LinkedList;
 
@@ -15,6 +14,8 @@ import java.util.LinkedList;
  * Atua como o "cérebro" central do jogo.
  */
 public class ControladorDePartida {
+
+    private boolean primeiraRodada = true;
 
     // --- ENUMS ---
     public enum EstadoTurno {
@@ -101,11 +102,7 @@ public class ControladorDePartida {
         return jogadores.get(id - 1);
     }
 
-    // --- CONTROLE DE FLUXO (TURNOS E FASES) ---
-
-    /**
-     * Avança para o próximo jogador e reinicia o ciclo do turno.
-     */
+    // --- CONTROLE DE FLUXO (TURNOS E FASES) --
     /**
      * Avança para o próximo jogador VIVO e reinicia o ciclo do turno.
      */
@@ -118,6 +115,9 @@ public class ControladorDePartida {
         // Avança para o próximo jogador VIVO (Loop seguro)
         int loopSafety = 0;
         do {
+            if(this.indiceJogadorAtual + 1 == this.jogadores.size()){
+                this.primeiraRodada = false;
+            }
             this.indiceJogadorAtual = (this.indiceJogadorAtual + 1) % this.jogadores.size();
             this.jogadorAtual = this.jogadores.get(this.indiceJogadorAtual);
 
@@ -150,6 +150,7 @@ public class ControladorDePartida {
     public void proximaFaseTurno() {
         switch (this.estadoTurno) {
             case DISTRIBUINDO:
+
                 if (ServicoDeCartas.isTrocaObrigatoria(this.jogadorAtual)) {
                     Gdx.app.log("Controlador", "Troca obrigatória. Não pode avançar.");
                     return;
@@ -158,7 +159,11 @@ public class ControladorDePartida {
                     Gdx.app.log("Controlador", "Ainda há tropas para distribuir.");
                     return;
                 }
-                this.estadoTurno = EstadoTurno.ATACANDO;
+                if (this.primeiraRodada) {
+                    passarAVez();
+                } else {
+                    this.estadoTurno = EstadoTurno.ATACANDO;
+                }
                 break;
 
             case ATACANDO:
@@ -307,9 +312,6 @@ public class ControladorDePartida {
     // --- AÇÕES DO JOGADOR: ATAQUE ---
 
     public AtaqueEstado realizarAtaque(Territorio atacante, Territorio defensor) {
-        if (this.estadoTurno != EstadoTurno.ATACANDO) {
-            // return AtaqueEstado.ERRO;
-        }
 
         // Lógica Unificada: Pega o defensor pelo ID
         Jogador jogadorDefensor = getJogadorPorId(defensor.getPlayerId());
@@ -331,6 +333,7 @@ public class ControladorDePartida {
                 Gdx.app.log("Controlador", "JOGADOR ELIMINADO: " + jogadorDefensor.getNome() + " por " + this.jogadorAtual.getNome());
                 historicoDeEliminacoes.put(jogadorDefensor, this.jogadorAtual);
                 atualizarObjetivosAposEliminacao(jogadorDefensor, this.jogadorAtual);
+                transferirCartasDeEliminacao(jogadorDefensor, this.jogadorAtual);
             }
         }
 
@@ -514,5 +517,9 @@ public class ControladorDePartida {
             return lote.restricao.getNome();
         }
         return null; // Sem restrição (Global)
+    }
+
+    public boolean isPrimeiraRodada() {
+        return primeiraRodada;
     }
 }

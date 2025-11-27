@@ -3,7 +3,6 @@ package com.gruposete.war.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import com.badlogic.gdx.utils.Array;
 
 public class ServicoDeReforco {
 
