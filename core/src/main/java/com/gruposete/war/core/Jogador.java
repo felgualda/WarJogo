@@ -11,16 +11,18 @@ public class Jogador {
     private List<Carta> cartas;
     private Objetivo objetivo;
     private int playerId;
+    private boolean isAI = false;
 
     private int exercitosDisponiveis;
 
-    public Jogador(String nome, CorJogador cor, int playerId) {
+    public Jogador(String nome, CorJogador cor, int playerId, boolean isAI) {
         this.nome = nome;
         this.cor = cor;
         this.territorios = new ArrayList<>();
         this.cartas = new ArrayList<>();
         this.exercitosDisponiveis = 0;
         this.playerId = playerId;
+        this.isAI = isAI;
     }
 
     public void adicionarExercitosDisponiveis(int quantidade) {
@@ -102,5 +104,13 @@ public class Jogador {
 
     public void removerCarta(Carta c) {
         cartas.remove(c);
+    }
+
+    public boolean getIsAI() {
+        return this.isAI;
+    }
+
+    public void setIsAI(boolean isAI) {
+        this.isAI = isAI;
     }
 }

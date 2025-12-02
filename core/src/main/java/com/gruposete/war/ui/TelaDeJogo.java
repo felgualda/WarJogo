@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.EarClippingTriangulator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -17,228 +18,423 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ShortArray;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.*;
-import com.gruposete.war.core.ControladorDePartida.EstadoTurno; // Importa o Enum
+import com.gruposete.war.core.ControladorDePartida.EstadoTurno;
 
-// imports para preenchimento de territórios
-import com.badlogic.gdx.math.EarClippingTriangulator;
-import com.badlogic.gdx.utils.ShortArray;
+import com.badlogic.gdx.utils.Timer; // IMPORTANTE: Para limpar a IA
+import java.util.function.Consumer; // IMPORTANTE: Para o callback
 
 public class TelaDeJogo {
 
-    private ControladorDePartida controlador;
-    public Stage stage;
-    private BitmapFont font;
-    private Skin skin;
-    private Texture background;
-    private ShapeRenderer shapeRenderer;
-    private Runnable voltarParaMenu;
-    private InputMultiplexer multiplexer;
-    private InputAdapter inputAdapter;
-    private EarClippingTriangulator triangulator = new EarClippingTriangulator();
+    // --- CONSTANTES (Configurações Globais da Tela) ---
+    private static final float VIEWPORT_WIDTH = 1280f;
+    private static final float VIEWPORT_HEIGHT = 720f;
+    private static final String LOG_TAG = "TelaDeJogo";
 
+    // --- CONSTANTES (UI e Layout) ---
+    private static final float FONT_SCALE = 1.5f;
+    private static final float ICON_SIZE = 64f;
+    private static final float ICON_BORDER_SCALE = 1.2f;
+    private static final float BANNER_WIDTH = 600f;
+    private static final float BANNER_HEIGHT = 100f;
+    private static final float BTN_WIDTH_STD = 110f; // Botões padrão do banner
+    private static final float BTN_OBJETIVO_W = 100f;
+    private static final float BTN_OBJETIVO_H = 50f;
+    private static final float BTN_OBJETIVO_X = 50f;
+    private static final float BTN_OBJETIVO_Y = 20f;
+
+    private static final float FONT_SCALE_PHASE = 2.0f; // Tamanho grande para o indicador
+    private static final Color COLOR_PHASE_TEXT = Color.YELLOW; // Cor de destaque (Amarelo ou Branco)
+
+    // --- CONSTANTES (Caminhos de Assets) ---
+    private static final String SKIN_PATH = "ui/uiskin.json";
+    private static final String BG_PATH = "TelaDeJogoBackground.png";
+    private static final String BANNER_BG_PATH = "ui/banner_600x100.png";
+    private static final String ICON_ARROW_PATH = "ui/UIRightArrow.png";
+    private static final String ICON_HUMAN_PATH = "ui/UIHumanPlayerIcon.png";
+    private static final String ICON_AI_PATH = "ui/UIAIPlayerIcon.png";
+    private static final String ICON_BORDER_PATH = "ui/UIPlayerIconBorder.png";
+
+    // --- CORE & LÓGICA ---
+    private final ControladorDePartida controlador;
+    private final Runnable voltarParaMenu;
+    private final Consumer<Jogador> vitoriaCallback;
+    private final EarClippingTriangulator triangulator;
+
+    // --- ESTADO LOCAL (Seleção) ---
     private Territorio territorioAtacante = null;
     private Territorio territorioOrigemMovimento = null;
+    private enum TipoMovimento { ATAQUE, ESTRATEGICO, DISTRIBUICAO }
 
-    private Texture bannerBackground;
-    private Texture texArrowRight, texHuman, texAI, texIconBorder;
-    private Drawable drawArrowRight, drawHuman, drawAI, drawIconBorder;
+    // --- LIBGDX ENGINE ---
+    public Stage stage;
+    private final InputMultiplexer multiplexer;
+    private final ShapeRenderer shapeRenderer;
+    private final BitmapFont font;
+    private final Skin skin;
+
+    // --- ASSETS GRÁFICOS ---
+    private final Texture background;
+    private final Texture bannerBackground;
+    private final Texture texArrowRight, texHuman, texAI, texIconBorder;
+    private final Drawable drawArrowRight, drawHuman, drawAI, drawIconBorder;
+
+    // --- ATORES DA UI (Referências para atualização) ---
     private ImageButton btnProximaFase;
+    private TextButton btnObjetivo;
     private Image iconeJogador;
     private Label tropasLabel;
+    private Label phaseLabel;
 
-    public TelaDeJogo(Runnable voltarParaMenu, ControladorDePartida controlador) {
+    public TelaDeJogo(Runnable voltarParaMenu, Consumer<Jogador> vitoriaCallback, ControladorDePartida controlador) {
         this.voltarParaMenu = voltarParaMenu;
         this.controlador = controlador;
+        this.triangulator = new EarClippingTriangulator();
+        this.vitoriaCallback = vitoriaCallback;
 
-        stage = new Stage(new FitViewport(1280, 720));
+        // 1. Inicialização Gráfica
+        this.stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        this.shapeRenderer = new ShapeRenderer();
+        this.font = new BitmapFont();
+        this.font.getData().setScale(FONT_SCALE);
 
-        // --- CORREÇÃO: InputAdapter agora usa o ControladorDePartida ---
-        inputAdapter = new InputAdapter() {
+        // 2. Carregamento de Assets
+        this.skin = new Skin(Gdx.files.internal(SKIN_PATH));
+        this.background = new Texture(Gdx.files.internal(BG_PATH));
+
+        this.bannerBackground = new Texture(Gdx.files.internal(BANNER_BG_PATH));
+        this.texArrowRight = new Texture(Gdx.files.internal(ICON_ARROW_PATH));
+        this.texHuman = new Texture(Gdx.files.internal(ICON_HUMAN_PATH));
+        this.texAI = new Texture(Gdx.files.internal(ICON_AI_PATH));
+        this.texIconBorder = new Texture(Gdx.files.internal(ICON_BORDER_PATH));
+
+        this.drawArrowRight = new TextureRegionDrawable(new TextureRegion(texArrowRight));
+        this.drawHuman = new TextureRegionDrawable(new TextureRegion(texHuman));
+        this.drawAI = new TextureRegionDrawable(new TextureRegion(texAI));
+        this.drawIconBorder = new TextureRegionDrawable(new TextureRegion(texIconBorder));
+
+        // 3. Configuração de Input
+        InputAdapter inputAdapter = criarInputAdapter();
+        this.multiplexer = new InputMultiplexer();
+        this.multiplexer.addProcessor(stage);
+        this.multiplexer.addProcessor(inputAdapter);
+
+        // 4. Construção da Interface
+        buildUIStage();
+    }
+
+    // --- INPUT HANDLING (Lógica de Cliques Organizada) ---
+
+    private InputAdapter criarInputAdapter() {
+        return new InputAdapter() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                //Se for Ia jogador não interage
+                if (controlador.getJogadorAtual().getIsAI()) {
+                    return false;
+                }
+
                 Vector2 worldCoords = new Vector2(screenX, screenY);
                 stage.getViewport().unproject(worldCoords);
-                EstadoTurno fase = controlador.getEstadoTurno();
 
-                Territorio t = null;
-                for (Territorio territorio : controlador.getTerritorios()) {
-                    if (territorio.contains(worldCoords.x, worldCoords.y)) {
-                        t = territorio;
+                EstadoTurno fase = controlador.getEstadoTurno();
+                //int indiceJogador = controlador.getJogadores().indexOf(controlador.getJogadorAtual());
+
+                // Detecta território clicado
+                Territorio territorioClicado = null;
+                for (Territorio t : controlador.getTerritorios()) {
+                    if (t.contains(worldCoords.x, worldCoords.y)) {
+                        territorioClicado = t;
                         break;
                     }
                 }
 
-                if (t == null) {
+                // Clique fora de território (Cancelamento)
+                if (territorioClicado == null) {
                     if (button == Input.Buttons.RIGHT) {
-                        territorioAtacante = null;
-                        territorioOrigemMovimento = null;
-                        System.out.println("Seleção cancelada.");
+                        limparSelecoes();
+                        Gdx.app.log(LOG_TAG, "Seleção cancelada.");
                     }
                     return false;
                 }
 
-                // --- Lógica de DISTRIBUIÇÃO (Sem mudança) ---
-                if (fase == EstadoTurno.DISTRIBUINDO) {
-                    if (button == Input.Buttons.LEFT) {
-                        // Valida se o território é do jogador ANTES de abrir o diálogo
-                        if (t.getPlayerId() - 1 == controlador.getJogadores().indexOf(controlador.getJogadorAtual())) {
-                            mostrarDialogoMovimento(t, null, TipoMovimento.DISTRIBUICAO);
-                        } else {
-                            System.out.println("Este território não é seu.");
-                        }
-                    }
-                }
+                // Debug (mantido da equipe)
+                logDebugAdjacencia(territorioClicado);
 
-                // --- Lógica de ATAQUE (Atualizada) ---
-                else if (fase == EstadoTurno.ATACANDO) {
-                    if (button == Input.Buttons.LEFT) {
-                        // 1. Selecionando Atacante
-                        if (territorioAtacante == null) {
-                            if (controlador.getJogadores().get(t.getPlayerId()-1) == controlador.getJogadorAtual() && t.getTropas() > 1) {
-                                territorioAtacante = t;
-                                System.out.println("Atacante selecionado: " + t.getNome());
-                            }
-                        }
-                        // 2. Selecionando Defensor
-                        else {
-                            if (controlador.getJogadores().get(t.getPlayerId()-1) != controlador.getJogadorAtual()) {
-                                Territorio territorioDefensor = t;
-                                if (controlador.getMapa().isAdjacente(territorioAtacante, territorioDefensor)) {
-                                    System.out.println("Atacando " + territorioDefensor.getNome() + " de " + territorioAtacante.getNome());
+                // Usa o metodo do controlador que corrige ID vs Index
+                Jogador donoDoTerritorio = controlador.getJogadorPorId(territorioClicado.getPlayerId());
 
-                                    AtaqueEstado resultado = controlador.realizarAtaque(territorioAtacante, territorioDefensor);
-                                    System.out.println("Resultado: " + resultado.toString());
+                // Compara objetos diretamente (muito mais seguro que índices)
+                boolean isMeuTerritorio = donoDoTerritorio.equals(controlador.getJogadorAtual());
 
-                                    if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
-                                        System.out.println("Território Conquistado! Abrindo diálogo...");
-                                        mostrarDialogoMovimento(territorioAtacante, territorioDefensor, TipoMovimento.ATAQUE);
-                                    }
-                                    territorioAtacante = null; // Reseta seleção após ataque (bem-sucedido ou não)
-                                } else {
-                                    System.out.println("Ataque falhou: " + territorioDefensor.getNome() + " não é adjacente a " + territorioAtacante.getNome());
-                                    territorioAtacante = null;
-                                }
-
-                            } else {
-                                territorioAtacante = t;
-                                System.out.println("Trocado atacante para: " + t.getNome());
-                            }
-                        }
-                    } else if (button == Input.Buttons.RIGHT) {
-                        territorioAtacante = null;
-                        System.out.println("Ataque cancelado.");
-                    }
-                }
-
-                // --- Lógica de MOVIMENTAÇÃO (Atualizada) ---
-                else if (fase == EstadoTurno.MOVIMENTANDO) {
-                    if (button == Input.Buttons.LEFT) {
-                        // 1. Selecionando Origem
-                        if (territorioOrigemMovimento == null) {
-                            if (controlador.getJogadores().get(t.getPlayerId()-1) == controlador.getJogadorAtual() && t.getTropas() > 1) {
-                                territorioOrigemMovimento = t;
-                                System.out.println("Movimentação: Origem: " + t.getNome());
-                            }
-                        }
-                        // 2. Selecionando Destino
-                        else if(!(territorioOrigemMovimento.equals(t))){
-                            // --- CORREÇÃO: VERIFICAÇÕES DE ADJACÊNCIA E DONO FALTANTES ---
-
-                            // Checa se o destino também é do jogador
-                            if (t.getPlayerId()  == territorioOrigemMovimento.getPlayerId()) {
-                                // Checa se o destino é adjacente
-                                if (controlador.getMapa().isAdjacente(territorioOrigemMovimento, t)) {
-                                    System.out.println("Movimentação: Destino: " + t.getNome());
-                                    mostrarDialogoMovimento(territorioOrigemMovimento, t, TipoMovimento.ESTRATEGICO);
-                                    territorioOrigemMovimento = null; // Reseta seleção
-                                } else {
-                                    System.out.println("Movimento falhou: " + t.getNome() + " não é adjacente a " + territorioOrigemMovimento.getNome());
-                                    territorioOrigemMovimento = null; // Reseta seleção
-                                }
-                            } else {
-                                System.out.println("Movimento falhou: " + t.getNome() + " não pertence a você.");
-                                territorioOrigemMovimento = null; // Reseta seleção
-                            }
-                        }
-                    } else if (button == Input.Buttons.RIGHT) {
-                        territorioOrigemMovimento = null; // Cancela seleção
-                        System.out.println("Movimentação cancelada.");
-                    }
+                // Delega a lógica baseada na fase
+                switch (fase) {
+                    case DISTRIBUINDO:
+                        tratarCliqueDistribuicao(territorioClicado, button, isMeuTerritorio);
+                        break;
+                    case ATACANDO:
+                        tratarCliqueAtaque(territorioClicado, button, isMeuTerritorio);
+                        break;
+                    case MOVIMENTANDO:
+                        tratarCliqueMovimentacao(territorioClicado, button, isMeuTerritorio);
+                        break;
                 }
                 return true;
             }
         };
-        // --- FIM DA CORREÇÃO ---
-
-        // Carrega skin e fundo
-        skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
-        background = new Texture(Gdx.files.internal("TelaDeJogoBackground.png"));
-
-        bannerBackground = new Texture(Gdx.files.internal("ui/banner_600x100.png"));
-        texArrowRight = new Texture(Gdx.files.internal("ui/UIRightArrow.png"));
-        texHuman = new Texture(Gdx.files.internal("ui/UIHumanPlayerIcon.png"));
-        texAI = new Texture(Gdx.files.internal("ui/UIAIPlayerIcon.png"));
-        texIconBorder = new Texture(Gdx.files.internal("ui/UIPlayerIconBorder.png"));
-
-        drawArrowRight = new TextureRegionDrawable(new TextureRegion(texArrowRight));
-        drawHuman = new TextureRegionDrawable(new TextureRegion(texHuman));
-        drawAI = new TextureRegionDrawable(new TextureRegion(texAI));
-        drawIconBorder = new TextureRegionDrawable(new TextureRegion(texIconBorder));;
-
-        btnProximaFase = new ImageButton(drawArrowRight);
-        btnProximaFase.setSize(64, 64);
-
-        font = new BitmapFont();
-        font.getData().setScale(1.5f); // aumenta a fonte em 50%
-        shapeRenderer = new ShapeRenderer();
-
-        multiplexer = new InputMultiplexer();
-        multiplexer.addProcessor(stage);
-        multiplexer.addProcessor(inputAdapter);
-
-        buildUIStage();
-
-        // Configuração do botão Voltar
-        TextButton btnVoltar = criarBotaoVoltar();
-        stage.addActor(btnVoltar);
-
     }
-    private void mostrarDialogoMovimento(final Territorio origem, final Territorio destino, final TipoMovimento tipo) {
 
-        // 1. Calcular o máximo de tropas e textos
-        int maxTropas;
-        String titulo;
-        String textoDialogo;
-        int minTropas = 0; // Mínimo a mover/alocar
+    private void tratarCliqueDistribuicao(Territorio t, int button, boolean isMeuTerritorio) {
+        if (button == Input.Buttons.LEFT) {
+            if (isMeuTerritorio) {
+                mostrarDialogoMovimento(t, null, TipoMovimento.DISTRIBUICAO);
+            } else {
+                Gdx.app.log(LOG_TAG, "Este território não é seu.");
+            }
+        }
+    }
+
+    private void tratarCliqueAtaque(Territorio t, int button, boolean isMeuTerritorio) {
+        if (button == Input.Buttons.RIGHT) {
+            territorioAtacante = null;
+            Gdx.app.log(LOG_TAG, "Ataque cancelado.");
+            return;
+        }
+
+        if (button != Input.Buttons.LEFT) return;
+
+        // 1. Selecionando Atacante
+        if (territorioAtacante == null) {
+            if (isMeuTerritorio && t.getTropas() > 1) {
+                territorioAtacante = t;
+                Gdx.app.log(LOG_TAG, "Atacante selecionado: " + t.getNome());
+            }
+        }
+        // 2. Selecionando Defensor
+        else {
+            if (!isMeuTerritorio) {
+                processarAtaque(t);
+            } else {
+                // Troca de atacante (clicou em outro seu)
+                territorioAtacante = t;
+                Gdx.app.log(LOG_TAG, "Trocado atacante para: " + t.getNome());
+            }
+        }
+    }
+
+    private void processarAtaque(Territorio defensor) {
+        if (controlador.getMapa().isAdjacente(territorioAtacante, defensor)) {
+            Gdx.app.log(LOG_TAG, "Atacando " + defensor.getNome() + " de " + territorioAtacante.getNome());
+
+            AtaqueEstado resultado = controlador.realizarAtaque(territorioAtacante, defensor);
+            Gdx.app.log(LOG_TAG, "Resultado: " + resultado.toString());
+
+            if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+                Gdx.app.log(LOG_TAG, "Território Conquistado! Abrindo diálogo...");
+                mostrarDialogoMovimento(territorioAtacante, defensor, TipoMovimento.ATAQUE);
+            }
+            territorioAtacante = null;
+        } else {
+            Gdx.app.log(LOG_TAG, "Ataque falhou: Não é adjacente.");
+        }
+    }
+
+    private void tratarCliqueMovimentacao(Territorio t, int button, boolean isMeuTerritorio) {
+        if (button == Input.Buttons.RIGHT) {
+            territorioOrigemMovimento = null;
+            Gdx.app.log(LOG_TAG, "Movimentação cancelada.");
+            return;
+        }
+
+        if (button != Input.Buttons.LEFT) return;
+
+        // 1. Selecionando Origem
+        if (territorioOrigemMovimento == null) {
+            int tropasIniciais = controlador.getTropasIniciaisMovimentacao(t);
+            if (isMeuTerritorio && t.getTropas() > 1 && tropasIniciais > 0) {
+                territorioOrigemMovimento = t;
+                Gdx.app.log(LOG_TAG, "Movimentação: Origem: " + t.getNome());
+            } else {
+                Gdx.app.log(LOG_TAG, "Movimentação: Não pode mover deste território.");
+            }
+        }
+        // 2. Selecionando Destino
+        else if (!territorioOrigemMovimento.equals(t)) {
+            if (isMeuTerritorio) {
+                if (controlador.getMapa().isAdjacente(territorioOrigemMovimento, t)) {
+                    Gdx.app.log(LOG_TAG, "Movimentação: Destino: " + t.getNome());
+                    mostrarDialogoMovimento(territorioOrigemMovimento, t, TipoMovimento.ESTRATEGICO);
+                    territorioOrigemMovimento = null;
+                } else {
+                    Gdx.app.log(LOG_TAG, "Movimento falhou: Não é adjacente.");
+                }
+            } else {
+                Gdx.app.log(LOG_TAG, "Movimento falhou: Não pertence a você.");
+            }
+        }
+    }
+
+    private void limparSelecoes() {
+        territorioAtacante = null;
+        territorioOrigemMovimento = null;
+    }
+
+    private void logDebugAdjacencia(Territorio t) {
+        // Método auxiliar apenas para manter o debug da equipe limpo no código
+        Array<Territorio> inimigos = controlador.getMapa().getInimigosAdj(t);
+        System.out.println("Inimigos de " + t.getNome() + ": " + inimigos.size);
+        Array<Territorio> aliados = controlador.getMapa().getAlidadosAdj(t);
+        System.out.println("Aliados de " + t.getNome() + ": " + aliados.size);
+    }
+
+    // --- UI CONSTRUCTION & LOGIC ---
+
+    private void buildUIStage() {
+        //Table pra mostrar fase atual
+        Table topTable = new Table();
+        topTable.setFillParent(true);
+        topTable.top(); // Alinha tudo no topo da tela
+
+        phaseLabel = new Label("", skin);
+        phaseLabel.setFontScale(FONT_SCALE_PHASE);
+
+        // Adiciona sombra ou cor de destaque para leitura fácil sobre o mapa
+        phaseLabel.setColor(COLOR_PHASE_TEXT);
+
+        // Adiciona ao topo com um pouco de margem
+        topTable.add(phaseLabel).padTop(20f);
+
+        stage.addActor(topTable);
+
+        Table uiTable = new Table();
+        uiTable.setFillParent(true);
+        uiTable.bottom();
+
+        // --- Banner Principal ---
+        Table banner = new Table(skin);
+        banner.setBackground(new TextureRegionDrawable(bannerBackground));
+        banner.pad(10);
+        banner.defaults().pad(0, 15, 0, 15); // Padding horizontal entre colunas
+
+        // 1. Ícone Jogador
+        if(!controlador.getJogadorAtual().getIsAI()){ iconeJogador = new Image(drawHuman);}
+        else {iconeJogador = new Image(drawAI);}
+        Image iconeBorda = new Image(drawIconBorder);
+        iconeBorda.setColor(Color.BLACK);
+
+        Stack iconeStack = new Stack();
+        iconeStack.add(iconeBorda);
+        iconeStack.add(iconeJogador);
+
+        iconeJogador.setSize(ICON_SIZE, ICON_SIZE);
+        float borderSize = ICON_SIZE * ICON_BORDER_SCALE;
+        iconeBorda.setSize(borderSize, borderSize);
+        // Centraliza
+        iconeJogador.setPosition(
+            (borderSize - ICON_SIZE) / 2f,
+            (borderSize - ICON_SIZE) / 2f
+        );
+
+        // 2. Label Tropas
+        tropasLabel = new Label("Tropas: 0", skin);
+        tropasLabel.setColor(Color.BLACK);
+
+        // 3. Botão Voltar
+        TextButton btnVoltar = new TextButton("Voltar", skin);
+
+        // 4. Botão Cartas
+        TextButton btnCartas = new TextButton("Cartas", skin);
+        btnCartas.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                new DialogoCartas(controlador, skin).show(stage);
+            }
+        });
+
+        // 5. Botão Próxima Fase (Seta)
+        btnProximaFase = new ImageButton(drawArrowRight);
+        btnProximaFase.getImage().setColor(Color.BLACK);
+        btnProximaFase.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                limparSelecoes();
+                controlador.proximaFaseTurno();
+            }
+        });
+
+        // Adiciona ao Banner
+        banner.add(iconeStack).size(borderSize);
+        banner.add(tropasLabel).width(150).left(); // Largura fixa para não empurrar
+        banner.add().expandX(); // Spacer que empurra o resto para a direita
+        banner.add(btnCartas).width(BTN_WIDTH_STD);
+        banner.add(btnProximaFase).size(ICON_SIZE, ICON_SIZE);
+
+        uiTable.add(banner).prefSize(BANNER_WIDTH, BANNER_HEIGHT);
+        stage.addActor(uiTable);
+
+        // --- Botão Flutuante: Objetivo ---
+        btnObjetivo = new TextButton("Objetivo", skin);
+        btnObjetivo.setSize(BTN_OBJETIVO_W, BTN_OBJETIVO_H);
+        btnObjetivo.setPosition(BTN_OBJETIVO_X, BTN_OBJETIVO_Y);
+
+        btnObjetivo.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                Objetivo obj = controlador.getJogadorAtual().getObjetivo();
+                if (obj != null) {
+                    new DialogoObjetivo(obj, skin).show(stage);
+                } else {
+                    Gdx.app.log(LOG_TAG, "Jogador sem objetivo!");
+                }
+            }
+        });
+        stage.addActor(btnObjetivo);
+        // Botão Voltar agora fora do Banner
+        btnVoltar.setSize(BTN_OBJETIVO_W, BTN_OBJETIVO_H);
+        // Posição: Largura da tela - Poição objetivo - Largura do Botão
+        float voltarX = VIEWPORT_WIDTH - (BTN_OBJETIVO_X + BTN_OBJETIVO_W);
+        btnVoltar.setPosition(voltarX, BTN_OBJETIVO_Y); //(mesma altura do objetivo)
+
+        btnVoltar.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if (voltarParaMenu != null) voltarParaMenu.run();
+            }
+        });
+        stage.addActor(btnVoltar);
+    }
+
+    private void mostrarDialogoMovimento(final Territorio origem, final Territorio destino, final TipoMovimento tipo) {
+        int maxTropas = 0;
+        String titulo = "";
+        String textoDialogo = "";
+        int minTropas = 0;
 
         if (tipo == TipoMovimento.ATAQUE) {
             minTropas = 1;
             titulo = "Mover Tropas (Conquista)";
             int maxDisponivel = origem.getTropas() - 1;
-            maxTropas = Math.min(3, maxDisponivel); // Sua regra de 3
+            maxTropas = Math.min(3, maxDisponivel);
             textoDialogo = "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
         }
         else if (tipo == TipoMovimento.ESTRATEGICO) {
             titulo = "Mover Tropas (Estratégico)";
-            int tropasIniciais = controlador.getTropasIniciaisMovimentacao(origem);
-            maxTropas = tropasIniciais - 1;
+            maxTropas = Math.min(controlador.getTropasIniciaisMovimentacao(origem),origem.getTropas() - 1);
             textoDialogo = "Mover para " + destino.getNome() + " (Max: " + maxTropas + ")";
         }
-        else { // NOVO TIPO: DISTRIBUICAO
+        else { // DISTRIBUICAO
             titulo = "Alocar Tropas";
-            maxTropas = controlador.getTropasADistribuir(); // O limite é o que o jogador tem
+            maxTropas = controlador.getTropasADistribuir();
             textoDialogo = "Alocar em " + origem.getNome() + " (Max: " + maxTropas + ")";
         }
 
-        // Validação: Se não pode mover/alocar, nem abre o diálogo.
         if (maxTropas < 1) {
-            Gdx.app.log("TelaDeJogo", "Nenhuma tropa disponível para esta ação.");
+            Gdx.app.log(LOG_TAG, "Nenhuma tropa disponível para esta ação.");
             return;
         }
 
-        // 2. Criar a UI da Subjanela
         final Dialog dialog = new Dialog(titulo, skin);
         dialog.setModal(true);
         dialog.text(textoDialogo);
@@ -247,23 +443,19 @@ public class TelaDeJogo {
         content.pad(20);
 
         final SpinBox spinBox = new SpinBox(minTropas, maxTropas, skin);
-
         content.row();
         content.add(spinBox);
 
-        // 3. Botão de Confirmação
         TextButton btnConfirmar = new TextButton("Confirmar", skin);
         btnConfirmar.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 int quantidade = spinBox.getValue();
-
-                // Chama o método correto do controlador
                 if (tipo == TipoMovimento.ATAQUE) {
                     controlador.moverTropasAposConquista(origem, destino, quantidade);
                 } else if (tipo == TipoMovimento.ESTRATEGICO) {
                     controlador.moverTropasEstrategicas(origem, destino, quantidade);
-                } else { // NOVO TIPO
+                } else {
                     controlador.alocarTropas(origem, quantidade);
                 }
                 dialog.hide();
@@ -271,91 +463,160 @@ public class TelaDeJogo {
         });
 
         dialog.button(btnConfirmar);
-        dialog.show(stage); // (Corrigido para usar o 'stage' único)
+        dialog.show(stage);
     }
-    private void buildUIStage() {
-        // Tabela principal (bottom-aligned)
-        Table uiTable = new Table();
-        uiTable.setFillParent(true);
-        uiTable.bottom();
 
-        // O Banner (Tabela interna)
-        Table banner = new Table(skin);
-        banner.setBackground(new TextureRegionDrawable(bannerBackground));
-        banner.pad(10);
-        banner.defaults().pad(0, 15, 0, 15); // Espaçamento entre colunas
-
-        // --- 1. Ícone do Jogador (col 1) ---
-        iconeJogador = new Image(drawHuman); // Default (será atualizado)
-        Image iconeBorda = new Image(drawIconBorder);
-        iconeBorda.setColor(Color.BLACK);
-
-        Stack iconeStack = new Stack();
-        iconeStack.add(iconeBorda);
-        iconeStack.add(iconeJogador);
-
-        // Seta o tamanho (64x64) e centraliza o ícone dentro da borda (assumindo borda 1.2x)
-        iconeJogador.setSize(64, 64);
-        float borderSize = 64 * 1.2f;
-        iconeBorda.setSize(borderSize, borderSize);
-        iconeJogador.setPosition(
-            (iconeBorda.getWidth() - iconeJogador.getWidth()) / 2f,
-            (iconeBorda.getHeight() - iconeJogador.getHeight()) / 2f
-        );
-
-        // --- 2. Contador de Tropas (col 2) ---
-        tropasLabel = new Label("Tropas: 0", skin);
-        tropasLabel.setColor(Color.BLACK);
-        tropasLabel.setFontScale(2.0f);
-        // --- 4. Botão Próxima Fase (col 4 - "ultima coluna") ---
-        btnProximaFase = new ImageButton(drawArrowRight);
-        btnProximaFase.getImage().setColor(Color.BLACK);
-        btnProximaFase.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                territorioAtacante = null;
-                territorioOrigemMovimento = null;
-                controlador.proximaFaseTurno();
-            }
-        });
-
-        // Adiciona os 4 elementos na única linha do banner
-        banner.add(iconeStack).size(borderSize);    // Col 1
-        banner.add(tropasLabel).expandX().left();   // Col 2
-        //banner.add(btnVoltar).width(120);           // Col 3
-        banner.add(btnProximaFase).size(64, 64); // Col 4 (Última)
-
-        // Adiciona o banner (600x100) à tabela principal
-        uiTable.add(banner).prefSize(600, 100);
-        stage.addActor(uiTable);
-    }
     private void atualizarUI() {
         Jogador jogador = controlador.getJogadorAtual();
         EstadoTurno fase = controlador.getEstadoTurno();
-        if (jogador == null) return; // Segurança
+        if (jogador == null) return;
 
-        iconeJogador.setDrawable(drawHuman);
-        // Tonaliza o ícone
-        iconeJogador.setColor(jogador.getCor().getGdxColor()); // (Requer getGdxColor() em CorJogador)
+        boolean isVezDaIA = jogador.getIsAI();
 
-        // 2. Atualizar Contador de Tropas
+        // Se for vez da IA, desabilita o botão de avançar fase
+        if (isVezDaIA) {
+            btnProximaFase.setDisabled(true);
+            btnProximaFase.setColor(Color.GRAY); // Opcional: deixar cinza
+            tropasLabel.setText("IA Jogando"); // Feedback visual
+        } else {
+            // Lógica normal para humano
+            btnProximaFase.setColor(Color.BLACK); // Ou PRETO, como definimos
+
+            if (fase == EstadoTurno.DISTRIBUINDO) {
+                tropasLabel.setText("Tropas: " + controlador.getTropasADistribuirTotal());
+                tropasLabel.setVisible(true);
+                btnProximaFase.setDisabled(controlador.getTropasADistribuir() > 0);
+            } else {
+                tropasLabel.setVisible(false);
+                btnProximaFase.setDisabled(false);
+            }
+        }
+
+        // Ícone
+        if (jogador.getIsAI()) {
+            iconeJogador.setDrawable(drawAI);
+        } else {
+            iconeJogador.setDrawable(drawHuman);
+        }
+        Color corJogador = jogador.getCor().getGdxColor();
+        iconeJogador.setColor(corJogador);
+
+        // Label
         if (fase == EstadoTurno.DISTRIBUINDO) {
             tropasLabel.setText("Tropas: " + controlador.getTropasADistribuir());
             tropasLabel.setVisible(true);
         } else {
-            tropasLabel.setVisible(false); // Esconde o contador se não estiver distribuindo
+            tropasLabel.setVisible(false);
         }
+        String textoFase = "";
+        switch (controlador.getEstadoTurno()) {
+            case DISTRIBUINDO:
+                textoFase = "FASE DE DISTRIBUIÇÃO";
+                break;
+            case ATACANDO:
+                textoFase = "FASE DE ATAQUE";
+                break;
+            case MOVIMENTANDO:
+                textoFase = "FASE DE MOVIMENTAÇÃO";
+                break;
+        }
+        phaseLabel.setText(textoFase);
 
-        // 3. Tonalizar Botão de Fase
-        btnProximaFase.setColor(jogador.getCor().getGdxColor());
-
-        // 4. Desativar botão de fase (se estiver distribuindo tropas)
+        // Botão Próxima Fase
         btnProximaFase.setDisabled(fase == EstadoTurno.DISTRIBUINDO && controlador.getTropasADistribuir() > 0);
+    }
+
+    // --- GAME LOOP ---
+
+    public void render(float delta) {
+        // 1. Limpeza da Tela (Essencial)
+        Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
+        Gdx.gl.glClear(Gdx.gl.GL_COLOR_BUFFER_BIT);
+
+        // 2. Atualiza a câmera do stage (Garante que as matrizes estão certas)
+        stage.getViewport().apply();
+
+        // --- DESENHO DO BACKGROUND ---
+        // Define explicitamente a matriz de projeção para o batch manual
+        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
+        stage.getBatch().begin();
+        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
+        stage.getBatch().end();
+
+        // --- DESENHO DO MAPA (SHAPE RENDERER) ---
+        // Shapes devem ser desenhados DEPOIS do fundo, mas ANTES da UI
+        desenharMapa();
+
+        // --- DESENHO DOS TEXTOS DE TROPAS ---
+        stage.getBatch().begin();
+        for (Territorio t : controlador.getTerritorios()) {
+            t.desenharTexto(font, stage.getBatch());
+        }
+        stage.getBatch().end();
+
+        // --- DESENHO DA UI (STAGE) ---
+        // Atualiza lógica da UI
+        atualizarUI();
+
+        // Desenha a UI por cima de tudo
+        stage.act(delta);
+        stage.draw();
+
+        // Checagem de Vitória
+        Jogador vencedor = controlador.verificarVitoria();
+        if (vencedor != null) {
+            // Limpa qualquer IA que esteja rodando em background
+            Timer.instance().clear();
+
+            // Chama a Main para trocar de tela
+            if (vitoriaCallback != null) {
+                vitoriaCallback.accept(vencedor);
+            }
+        }
+    }
+
+    private void desenharMapa() {
+        shapeRenderer.setProjectionMatrix(stage.getCamera().combined);
+
+        // Preenchimento
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        for (Territorio t : controlador.getTerritorios()) {
+            int playerId = t.getPlayerId();
+            // (Segurança: playerId começa em 1, lista em 0)
+            if (playerId > 0 && playerId <= controlador.getJogadores().size()) {
+                Jogador dono = controlador.getJogadorPorId(t.getPlayerId());
+                Color corDoJogador = dono.getCor().getGdxColor();
+                shapeRenderer.setColor(corDoJogador.r, corDoJogador.g, corDoJogador.b, 0.7f);
+
+                float[] vertices = t.getArea().getTransformedVertices();
+                ShortArray indices = triangulator.computeTriangles(vertices);
+
+                for (int i = 0; i < indices.size; i += 3) {
+                    int p1 = indices.get(i) * 2;
+                    int p2 = indices.get(i + 1) * 2;
+                    int p3 = indices.get(i + 2) * 2;
+                    shapeRenderer.triangle(
+                        vertices[p1], vertices[p1 + 1],
+                        vertices[p2], vertices[p2 + 1],
+                        vertices[p3], vertices[p3 + 1]
+                    );
+                }
+            }
+        }
+        shapeRenderer.end();
+
+        // Contornos
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        for (Territorio t : controlador.getTerritorios()) {
+            shapeRenderer.setColor(Color.GRAY);
+            shapeRenderer.polygon(t.getArea().getTransformedVertices());
+        }
+        shapeRenderer.end();
     }
 
     public void novoJogo(){
         for(Territorio t : controlador.getTerritorios()){
-            t.resetarParaNovoJogo(); // Zera tropas e playerId
+            t.resetarParaNovoJogo();
         }
     }
 
@@ -363,128 +624,21 @@ public class TelaDeJogo {
         return multiplexer;
     }
 
-    private TextButton criarBotaoVoltar() {
-        float btnWidth = 150;
-        float btnHeight = 50;
-        float btnX = 1230 - btnWidth;
-        float btnY = 20;
-
-        BitmapFont buttonFont = new BitmapFont();
-        buttonFont.getData().setScale(1.5f);
-
-        TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
-        style.up = skin.getDrawable("buttonUp");
-        style.down = skin.getDrawable("buttonDown");
-        style.font = buttonFont;
-
-        TextButton btnVoltar = new TextButton("Voltar", style);
-        btnVoltar.setSize(btnWidth, btnHeight);
-        btnVoltar.setPosition(btnX, btnY);
-
-        btnVoltar.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                if (voltarParaMenu != null) {
-                    voltarParaMenu.run();
-                }
-            }
-        });
-
-        return btnVoltar;
-    }
-
-    
-
-    public void render(float delta) {
-        // limpa a tela
-        Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
-        Gdx.gl.glClear(Gdx.gl.GL_COLOR_BUFFER_BIT);
-
-        // desenha o fundo
-        stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(),
-            stage.getViewport().getWorldHeight());
-        stage.getBatch().end();
-        // atualiza e desenha a UI (Botão Voltar)
-
-
-
-        // desenha os territórios preenchidos
-        shapeRenderer.setProjectionMatrix(stage.getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        for (Territorio t : controlador.getTerritorios()) {
-
-            // --- CORREÇÃO: Pega a cor do Jogador usando o ID ---
-            int playerId = t.getPlayerId();
-            Jogador dono = controlador.getJogadores().get(playerId-1);
-            // (Assumindo que Jogador tem .getCor() e CorJogador tem .getGdxColor())
-            Color corDoJogador = dono.getCor().getGdxColor();
-            // --- FIM DA CORREÇÃO ---
-
-            shapeRenderer.setColor(corDoJogador.r, corDoJogador.g, corDoJogador.b, 0.7f);
-
-            // Pega os vértices do polígono
-            float[] vertices = t.getArea().getTransformedVertices();
-
-            // Roda triangulador
-            ShortArray indicesDosTriangulos = triangulator.computeTriangles(vertices);
-
-            // Desenha cada triângulo
-            for (int i = 0; i < indicesDosTriangulos.size; i += 3) {
-                int p1 = indicesDosTriangulos.get(i) * 2;
-                int p2 = indicesDosTriangulos.get(i + 1) * 2;
-                int p3 = indicesDosTriangulos.get(i + 2) * 2;
-
-                shapeRenderer.triangle(
-                    vertices[p1],     // Ponto 1 - x
-                    vertices[p1 + 1], // Ponto 1 - y
-                    vertices[p2],     // Ponto 2 - x
-                    vertices[p2 + 1], // Ponto 2 - y
-                    vertices[p3],     // Ponto 3 - x
-                    vertices[p3 + 1]  // Ponto 3 - y
-                );
-            }
-        }
-        shapeRenderer.end();
-
-        // desenha os contornos dos territórios
-        shapeRenderer.setProjectionMatrix(stage.getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        for (Territorio t : controlador.getTerritorios()) {
-            shapeRenderer.setColor(Color.GRAY);
-            shapeRenderer.polygon(t.getArea().getTransformedVertices());
-        }
-        shapeRenderer.end();
-
-        // desenha os números de tropas
-        stage.getBatch().begin();
-        for (Territorio t : controlador.getTerritorios()) {
-            t.desenharTexto(font, stage.getBatch()); // Agora lê as tropas atualizadas
-        }
-        stage.getBatch().end();
-        //desenhaUI
-        stage.act(delta);
-        stage.draw();
-        atualizarUI();
-    }
-
-
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
     }
 
     public void dispose() {
+        Timer.instance().clear();
         stage.dispose();
         skin.dispose();
         background.dispose();
         font.dispose();
+        shapeRenderer.dispose();
         bannerBackground.dispose();
         texArrowRight.dispose();
         texHuman.dispose();
         texAI.dispose();
         texIconBorder.dispose();
-        // shapeRenderer é descartado pelo stage? Não.
-        shapeRenderer.dispose();
     }
 }
