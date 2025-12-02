@@ -71,7 +71,7 @@ Este projeto utiliza **GitHub Actions** para executar testes automaticamente em:
 - macOS
 - Ubuntu
 
-Com as versões de Java: 17 e 21
+Com Java 17
 
 O workflow está configurado em `.github/workflows/build-and-test.yml` e roda a cada push.
 
