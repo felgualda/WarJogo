@@ -64,8 +64,7 @@ public class ControladorDePartidaTest {
         // Valida que o controlador foi inicializado corretamente
         assertTrue(atual.getTerritorios().size() > 0, "Jogador deve ter territórios após iniciar partida");
         
-        // Testa alocação com lote disponível
-        Territorio t = atual.getTerritorios().get(0);
+        // Testes de alocação com validações
         int lote = ctrl.getTropasADistribuir();
         int totalLotes = ctrl.getTropasADistribuirTotal();
         
@@ -74,16 +73,26 @@ public class ControladorDePartidaTest {
         
         if (lote > 0) {
             // Tenta alocar quantidade maior que o lote (deve falhar)
-            boolean res = ctrl.alocarTropas(t, lote + 100);
-            assertFalse(res, "Não deveria alocar mais que o lote disponível");
+            Territorio t = atual.getTerritorios().get(0);
+            boolean resExcesso = ctrl.alocarTropas(t, lote + 100);
+            assertFalse(resExcesso, "Não deveria alocar mais que o lote disponível");
 
-            // Aloca 1 tropa (válido)
-            int tropasAntes = t.getTropas();
-            boolean ok = ctrl.alocarTropas(t, 1);
-            assertTrue(ok, "Deveria alocar 1 tropa quando há lote");
-            assertEquals(tropasAntes + 1, t.getTropas(), "Deveria ter +1 tropa");
+            // Testa alocação de 1 tropa em todos os territórios até conseguir
+            // (alguns podem falhar se têm restrição de continente)
+            boolean alocouComSucesso = false;
+            for (Territorio territorio : atual.getTerritorios()) {
+                int tropasAntes = territorio.getTropas();
+                boolean ok = ctrl.alocarTropas(territorio, 1);
+                if (ok) {
+                    alocouComSucesso = true;
+                    assertEquals(tropasAntes + 1, territorio.getTropas(), "Deveria ter +1 tropa após alocação");
+                    break; // Saiu após primeira alocação bem-sucedida
+                }
+            }
+            assertTrue(alocouComSucesso, "Deveria conseguir alocar pelo menos 1 tropa em algum território");
         } else {
-            // Se não houver lotes, tenta alocar mesmo assim (deve falhar gracefully)
+            // Se não houver lotes, tenta alocar em qualquer território (deve falhar)
+            Territorio t = atual.getTerritorios().get(0);
             boolean ok = ctrl.alocarTropas(t, 1);
             assertFalse(ok, "Não deveria alocar tropas quando não há lote disponível");
         }
