@@ -302,23 +302,31 @@ public class TelaDeSelecaoDeJogadores {
 
     private void cycleState(CorJogador cor, boolean proximo) {
         TipoJogador estadoAtual = estadosDosJogadores.get(cor);
+        
+        // 1. Calcula qual seria o próximo estado natural
         TipoJogador novoEstado = proximo ? estadoAtual.proximo() : estadoAtual.anterior();
 
-        // Validação de Restrição (Máx 3 'NENHUM' / Mín 3 Jogadores)
+        // 2. Verifica se o novo estado seria "NENHUM" e se isso violaria a regra mínima
         if (novoEstado == TipoJogador.NENHUM) {
-            int nenhumCount = 0;
+            
+            // Conta quantos jogadores ativos existem NO MOMENTO
+            int jogadoresAtivos = 0;
             for (TipoJogador tipo : estadosDosJogadores.values()) {
-                if (tipo == TipoJogador.NENHUM) nenhumCount++;
+                if (tipo != TipoJogador.NENHUM) jogadoresAtivos++;
             }
-            // Se já tem 3 Nenhuns (ou seja, só 3 jogadores ativos), bloqueia adicionar mais um
-            if (nenhumCount >= (CorJogador.values().length - MIN_JOGADORES) && estadoAtual != TipoJogador.NENHUM) {
-                return;
+
+            // Se já estamos no limite mínimo (3) e tentarmos transformar um ativo em NENHUM...
+            // ...nós PULAMOS o estado NENHUM e vamos para o próximo da fila.
+            // Ex: Se estava em HUMANO e ia para NENHUM (Bloqueado) -> Pula para IA.
+            if (jogadoresAtivos <= MIN_JOGADORES && estadoAtual != TipoJogador.NENHUM) {
+                novoEstado = proximo ? novoEstado.proximo() : novoEstado.anterior();
             }
         }
 
+        // 3. Aplica a mudança
         estadosDosJogadores.put(cor, novoEstado);
 
-        // Atualiza Visual
+        // 4. Atualiza Visualmente
         Image icone = iconesDeEstado.get(cor);
         switch (novoEstado) {
             case NENHUM: icone.setDrawable(drawNoPlayer); break;
@@ -326,7 +334,9 @@ public class TelaDeSelecaoDeJogadores {
             case IA:     icone.setDrawable(drawAI); break;
         }
         icone.setColor(cor.getGdxColor());
-        errorLabel.setText("");
+        
+        // Limpa mensagem de erro se houver
+        if (errorLabel != null) errorLabel.setText("");
     }
 
     public void resetarEstado() {
