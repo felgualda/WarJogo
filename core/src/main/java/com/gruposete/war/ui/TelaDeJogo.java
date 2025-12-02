@@ -22,6 +22,11 @@ import com.badlogic.gdx.utils.ShortArray;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.*;
 import com.gruposete.war.core.ControladorDePartida.EstadoTurno;
+import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.input.GestureDetector.GestureAdapter;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+
 
 import com.badlogic.gdx.utils.Timer; // IMPORTANTE: Para limpar a IA
 import java.util.function.Consumer; // IMPORTANTE: Para o callback
@@ -88,6 +93,19 @@ public class TelaDeJogo {
     private Label tropasLabel;
     private Label phaseLabel;
 
+    // --- CONTROLE DE CÂMERA ---
+    private GestureDetector gestureDetector;
+    private float zoomMin = 0.5f; // Zoom máximo (perto)
+    private float zoomMax = 1f; // Zoom mínimo (longe)
+
+    // Limites do mundo para não arrastar para o infinito 
+    private float mapWidth = 1280f; 
+    private float mapHeight = 720f;
+
+    // Variáveis para controle do Pinch (Dois dedos)
+    private Vector2 lastPinchCenter = new Vector2();
+    private boolean isPinching = false;
+
     public TelaDeJogo(Runnable voltarParaMenu, Consumer<Jogador> vitoriaCallback, ControladorDePartida controlador) {
         this.voltarParaMenu = voltarParaMenu;
         this.controlador = controlador;
@@ -117,9 +135,13 @@ public class TelaDeJogo {
 
         // 3. Configuração de Input
         InputAdapter inputAdapter = criarInputAdapter();
+        this.gestureDetector = criarGestureDetector();
+
         this.multiplexer = new InputMultiplexer();
+        
         this.multiplexer.addProcessor(stage);
         this.multiplexer.addProcessor(inputAdapter);
+        this.multiplexer.addProcessor(gestureDetector);
 
         // 4. Construção da Interface
         buildUIStage();
@@ -129,18 +151,17 @@ public class TelaDeJogo {
 
     private InputAdapter criarInputAdapter() {
         return new InputAdapter() {
+            // 1. CLIQUE NO MAPA (SELEÇÃO)
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                //Se for Ia jogador não interage
-                if (controlador.getJogadorAtual().getIsAI()) {
-                    return false;
-                }
+                // Se for IA, ignora
+                if (controlador.getJogadorAtual().getIsAI()) return false;
 
+                // Converte clique da tela para coordenadas do mundo (considerando o Zoom atual)
                 Vector2 worldCoords = new Vector2(screenX, screenY);
                 stage.getViewport().unproject(worldCoords);
 
                 EstadoTurno fase = controlador.getEstadoTurno();
-                //int indiceJogador = controlador.getJogadores().indexOf(controlador.getJogadorAtual());
 
                 // Detecta território clicado
                 Territorio territorioClicado = null;
@@ -151,39 +172,118 @@ public class TelaDeJogo {
                     }
                 }
 
-                // Clique fora de território (Cancelamento)
+                // Clique fora (Botão Direito cancela)
                 if (territorioClicado == null) {
                     if (button == Input.Buttons.RIGHT) {
                         limparSelecoes();
                         Gdx.app.log(LOG_TAG, "Seleção cancelada.");
                     }
-                    return false;
+                    return false; // Retorna false para permitir que o GestureDetector funcione (Pan)
                 }
 
-                // Debug (mantido da equipe)
+                // Lógica de Jogo (Seleção, Ataque, etc)
                 logDebugAdjacencia(territorioClicado);
+                Jogador dono = controlador.getJogadorPorId(territorioClicado.getPlayerId());
+                boolean isMeu = dono.equals(controlador.getJogadorAtual());
 
-                // Usa o metodo do controlador que corrige ID vs Index
-                Jogador donoDoTerritorio = controlador.getJogadorPorId(territorioClicado.getPlayerId());
-
-                // Compara objetos diretamente (muito mais seguro que índices)
-                boolean isMeuTerritorio = donoDoTerritorio.equals(controlador.getJogadorAtual());
-
-                // Delega a lógica baseada na fase
                 switch (fase) {
-                    case DISTRIBUINDO:
-                        tratarCliqueDistribuicao(territorioClicado, button, isMeuTerritorio);
-                        break;
-                    case ATACANDO:
-                        tratarCliqueAtaque(territorioClicado, button, isMeuTerritorio);
-                        break;
-                    case MOVIMENTANDO:
-                        tratarCliqueMovimentacao(territorioClicado, button, isMeuTerritorio);
-                        break;
+                    case DISTRIBUINDO: tratarCliqueDistribuicao(territorioClicado, button, isMeu); break;
+                    case ATACANDO:     tratarCliqueAtaque(territorioClicado, button, isMeu); break;
+                    case MOVIMENTANDO: tratarCliqueMovimentacao(territorioClicado, button, isMeu); break;
                 }
                 return true;
             }
+
+            // 2. ZOOM COM TRACKPAD (Dois dedos) OU MOUSE (Rodinha)
+            @Override
+            public boolean scrolled(float amountX, float amountY) {
+                OrthographicCamera camera = (OrthographicCamera) stage.getCamera();
+                
+                // Verifica se a tecla CTRL está pressionada (Esquerda ou Direita)
+                boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || 
+                                        Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+
+                if (isCtrlPressed) {
+                    // --- MODO ZOOM (CTRL Pressionado) ---
+                    // Usa o movimento vertical (Y) para aproximar/afastar
+                    float zoomSpeed = 0.1f;
+                    camera.zoom += amountY * zoomSpeed;
+                    
+                    // Limita o zoom (1.0f = tamanho original)
+                    camera.zoom = MathUtils.clamp(camera.zoom, zoomMin, zoomMax);
+                    
+                } else {
+                    // --- MODO PAN/MOVER (Sem CTRL) ---
+                    // Ajusta velocidade baseado no zoom atual
+                    float panSpeed = 20f * camera.zoom;
+
+                    // Move verticalmente
+                    if (amountY != 0) {
+                        camera.translate(0, - amountY * panSpeed);
+                    }
+                    // Move horizontalmente
+                    if (amountX != 0) {
+                        camera.translate(amountX * panSpeed, 0);
+                    }
+                }
+
+                // Mantém a câmera dentro do mapa
+                limitarCamera(camera);
+                return true;
+            }
+
+            // 3. CONTROLE PELO TECLADO (Para testar no Notebook)
+            @Override
+            public boolean keyDown(int keycode) {
+                OrthographicCamera camera = (OrthographicCamera) stage.getCamera();
+                boolean alterou = false;
+                float moveSpeed = 20f * camera.zoom; // Move mais rápido se estiver longe
+
+                if (keycode == Input.Keys.Z) { // Zoom In
+                    camera.zoom -= 0.1f;
+                    alterou = true;
+                }
+                if (keycode == Input.Keys.X) { // Zoom Out
+                    camera.zoom += 0.1f;
+                    alterou = true;
+                }
+                if (keycode == Input.Keys.LEFT) {
+                    camera.translate(-moveSpeed, 0);
+                    alterou = true;
+                }
+                if (keycode == Input.Keys.RIGHT) {
+                    camera.translate(moveSpeed, 0);
+                    alterou = true;
+                }
+                if (keycode == Input.Keys.UP) {
+                    camera.translate(0, moveSpeed);
+                    alterou = true;
+                }
+                if (keycode == Input.Keys.DOWN) {
+                    camera.translate(0, -moveSpeed);
+                    alterou = true;
+                }
+
+                if (alterou) {
+                    camera.zoom = MathUtils.clamp(camera.zoom, zoomMin, zoomMax);
+                    limitarCamera(camera);
+                    return true;
+                }
+                return false;
+            }
         };
+    }
+    
+    public boolean scrolled(float amountX, float amountY) {
+        OrthographicCamera camera = (OrthographicCamera) stage.getCamera();
+        // amountY retorna 1 ou -1 dependendo da direção da roda
+        float zoomSpeed = 0.1f;
+        camera.zoom += amountY * zoomSpeed;
+        
+        // Limita o zoom
+        camera.zoom = MathUtils.clamp(camera.zoom, zoomMin, zoomMax);
+        limitarCamera(camera);
+        return true;
     }
 
     private void tratarCliqueDistribuicao(Territorio t, int button, boolean isMeuTerritorio) {
@@ -641,4 +741,89 @@ public class TelaDeJogo {
         texAI.dispose();
         texIconBorder.dispose();
     }
+
+    private GestureDetector criarGestureDetector() {
+        return new GestureDetector(new GestureAdapter() {
+            
+            // 1. ZOOM (Aproximar/Afastar os dedos)
+            @Override
+            public boolean zoom(float initialDistance, float distance) {
+                if (controlador.getJogadorAtual().getIsAI()) return false;
+
+                OrthographicCamera camera = (OrthographicCamera) stage.getCamera();
+                
+                // Calcula a proporção da mudança
+                float ratio = initialDistance / distance;
+                
+                // Aplica o zoom (suavizado para não ficar muito rápido)
+                // Se quiser mais rápido, não multiplique por camera.zoom, use direto o ratio
+                float newZoom = camera.zoom * ratio;
+                
+                // Aplica limites (1.0f = tamanho original, 0.5f = super zoom)
+                camera.zoom = MathUtils.clamp(newZoom, zoomMin, zoomMax);
+                
+                limitarCamera(camera);
+                return true;
+            }
+
+            // 2. MOVER COM DOIS DEDOS (Pinch Pan)
+            @Override
+            public boolean pinch(Vector2 initialPointer1, Vector2 initialPointer2, Vector2 pointer1, Vector2 pointer2) {
+                if (controlador.getJogadorAtual().getIsAI()) return false;
+
+                // Calcula o ponto central ATUAL entre os dois dedos
+                float currentCenterX = (pointer1.x + pointer2.x) / 2f;
+                float currentCenterY = (pointer1.y + pointer2.y) / 2f;
+
+                if (!isPinching) {
+                    // Começou o gesto agora, apenas guarda a posição inicial
+                    lastPinchCenter.set(currentCenterX, currentCenterY);
+                    isPinching = true;
+                } else {
+                    // O gesto já estava acontecendo, calcula o quanto moveu
+                    float deltaX = currentCenterX - lastPinchCenter.x;
+                    float deltaY = currentCenterY - lastPinchCenter.y;
+
+                    OrthographicCamera camera = (OrthographicCamera) stage.getCamera();
+
+                    // Move a câmera na direção oposta ao dedo (efeito de arrastar papel)
+                    // Multiplicamos pelo zoom para que a velocidade pareça natural em qualquer nível
+                    camera.translate(-deltaX * camera.zoom, deltaY * camera.zoom);
+                    
+                    // Atualiza a referência para o próximo frame
+                    lastPinchCenter.set(currentCenterX, currentCenterY);
+                    
+                    limitarCamera(camera);
+                }
+                return true;
+            }
+
+            @Override
+            public void pinchStop() {
+                // Reseta a flag quando tira os dedos da tela
+                isPinching = false;
+            }
+            
+            // Opcional: Se quiser manter o arrasto de 1 dedo também, mantenha o pan.
+            // Se quiser EXCLUSIVAMENTE 2 dedos para mover, remova o conteúdo deste método.
+            @Override
+            public boolean pan(float x, float y, float deltaX, float deltaY) {
+                // Deixe retornando false se quiser mover SÓ com 2 dedos
+                return false; 
+            }
+        });
+    }
+
+    // Mantém a câmera dentro dos limites do mapa
+    private void limitarCamera(OrthographicCamera camera) {
+        float effectiveViewportW = camera.viewportWidth * camera.zoom;
+        float effectiveViewportH = camera.viewportHeight * camera.zoom;
+
+        // Clamp da posição X e Y
+        camera.position.x = MathUtils.clamp(camera.position.x, effectiveViewportW / 2f, mapWidth - effectiveViewportW / 2f);
+        camera.position.y = MathUtils.clamp(camera.position.y, effectiveViewportH / 2f, mapHeight - effectiveViewportH / 2f);
+        
+        camera.update();
+    }
+
 }
