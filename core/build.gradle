@@ -1,3 +1,7 @@
+plugins {
+  id 'com.adarshr.test-logger' version '3.2.0'
+}
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
@@ -10,4 +14,24 @@ dependencies {
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+
+  // Test dependencies
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+  testImplementation 'org.assertj:assertj-core:3.24.2'
+  // Headless backend for libGDX so tests using Gdx.app work in CI/headless environments
+  testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+}
+
+test {
+  useJUnitPlatform()
+}
+
+testlogger {
+  theme 'mocha'
+  showSimpleNames true
+  showPassed true
+  showFailed true
+  showSkipped true
+  showStandardStreams false
+  logLevel 'lifecycle'
 }

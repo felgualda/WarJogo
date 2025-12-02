@@ -1,0 +1,56 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, feature/*, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        java-version: [ '17', '21' ]
+    
+    name: Test on ${{ matrix.os }} with Java ${{ matrix.java-version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build core module (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :core:classes --no-daemon
+
+      - name: Build core module (Windows)
+        if: runner.os == 'Windows'
+        run: .\gradlew.bat :core:classes --no-daemon
+        shell: powershell
+
+      - name: Run Unit Tests (Unix)
+        if: runner.os != 'Windows'
+        run: ./gradlew :core:test --no-daemon
+
+      - name: Run Unit Tests (Windows)
+        if: runner.os == 'Windows'
+        run: .\gradlew.bat :core:test --no-daemon
+        shell: powershell
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.os }}-java${{ matrix.java-version }}
+          path: core/build/reports/tests/test/
+          retention-days: 30
