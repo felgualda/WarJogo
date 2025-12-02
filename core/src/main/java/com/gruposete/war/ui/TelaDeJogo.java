@@ -359,23 +359,90 @@ public class TelaDeJogo {
         if (button == Input.Buttons.LEFT && isMeu) mostrarDialogoMovimento(t, null, TipoMovimento.DISTRIBUICAO);
     }
     private void tratarCliqueAtaque(Territorio t, int button, boolean isMeu) {
-        if (button == Input.Buttons.RIGHT) { territorioAtacante = null; return; }
+        // Cancelamento com Botão Direito (Mantido)
+        if (button == Input.Buttons.RIGHT) {
+            territorioAtacante = null;
+            Gdx.app.log(LOG_TAG, "Ataque cancelado (Botão Direito).");
+            return;
+        }
+
         if (button != Input.Buttons.LEFT) return;
-        if (territorioAtacante == null) { if (isMeu && t.getTropas() > 1) territorioAtacante = t; }
-        else { if (!isMeu) processarAtaque(t); else territorioAtacante = t; }
+
+        // 1. Selecionando Atacante
+        if (territorioAtacante == null) {
+            if (isMeu && t.getTropas() > 1) {
+                territorioAtacante = t;
+                Gdx.app.log(LOG_TAG, "Atacante selecionado: " + t.getNome());
+            }
+        }
+        // 2. Já existe um selecionado...
+        else {
+            // --- NOVO: SE CLICAR NO MESMO, CANCELA ---
+            if (territorioAtacante.equals(t)) {
+                territorioAtacante = null;
+                Gdx.app.log(LOG_TAG, "Seleção cancelada (Toggle).");
+                return;
+            }
+
+            // Se clicou em OUTRO território seu, troca a seleção
+            if (isMeu) {
+                if (t.getTropas() > 1) {
+                    territorioAtacante = t;
+                    Gdx.app.log(LOG_TAG, "Trocado atacante para: " + t.getNome());
+                }
+            } 
+            // Se clicou em inimigo, ataca
+            else {
+                processarAtaque(t);
+            }
+        }
     }
     private void processarAtaque(Territorio defensor) {
         if (controlador.getMapa().isAdjacente(territorioAtacante, defensor)) {
-            AtaqueEstado resultado = controlador.realizarAtaque(territorioAtacante, defensor);
-            if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) mostrarDialogoMovimento(territorioAtacante, defensor, TipoMovimento.ATAQUE);
-            territorioAtacante = null;
+            
+            // ATENÇÃO: O controlador agora deve retornar ResultadoCombate
+            ResultadoCombate resultado = controlador.realizarAtaque(territorioAtacante, defensor);
+            
+            // --- MOSTRA O DIÁLOGO DOS DADOS ---
+            // Só mostramos se for Humano atacando (para não spamar a tela na vez da IA)
+            if (!controlador.getJogadorAtual().getIsAI()) {
+                new DialogoResultadoDados(resultado, skin).show(stage);
+            }
+
+            Gdx.app.log(LOG_TAG, "Resultado: " + resultado.estado);
+
+            if (resultado.estado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+                // Se conquistou, mostra o diálogo de mover tropas DEPOIS que fechar o dos dados
+                // (Ou podemos mostrar junto, mas pode ficar confuso. O ideal é o jogador dar OK nos dados e aí abrir a movimentação)
+                mostrarDialogoMovimento(territorioAtacante, defensor, TipoMovimento.ATAQUE);
+            }
+            
+            // Se NÃO conquistou, limpa a seleção para o jogador escolher de novo
+            if (resultado.estado != AtaqueEstado.TERRITORIO_CONQUISTADO) {
+                 territorioAtacante = null;
+            }
+            
+        } else {
+            Gdx.app.log(LOG_TAG, "Ataque falhou: Não é adjacente.");
         }
     }
     private void tratarCliqueMovimentacao(Territorio t, int button, boolean isMeu) {
         if (button == Input.Buttons.RIGHT) { territorioOrigemMovimento = null; return; }
         if (button != Input.Buttons.LEFT) return;
-        if (territorioOrigemMovimento == null) { if (isMeu && t.getTropas() > 1 && controlador.getTropasIniciaisMovimentacao(t) > 0) territorioOrigemMovimento = t; }
-        else if (!territorioOrigemMovimento.equals(t)) {
+
+        if (territorioOrigemMovimento == null) {
+             // ... (Lógica de seleção original) ...
+             if (isMeu && t.getTropas() > 1 && controlador.getTropasIniciaisMovimentacao(t) > 0) 
+                 territorioOrigemMovimento = t;
+        } 
+        else {
+            // --- NOVO: DESSELECIONAR SE CLICAR NO MESMO ---
+            if (territorioOrigemMovimento.equals(t)) {
+                territorioOrigemMovimento = null;
+                return;
+            }
+            
+            // Lógica de mover
             if (isMeu && controlador.getMapa().isAdjacente(territorioOrigemMovimento, t)) {
                 mostrarDialogoMovimento(territorioOrigemMovimento, t, TipoMovimento.ESTRATEGICO);
                 territorioOrigemMovimento = null;
@@ -507,16 +574,16 @@ public class TelaDeJogo {
     }
 
     private void desenharMapa() {
-        shapeRenderer.setProjectionMatrix(gameCamera.combined); // Usa a câmera do jogo
+        shapeRenderer.setProjectionMatrix(gameCamera.combined);
         
-        // Preenchimento
+        // 1. DESENHO BASE (Preenchimento colorido dos países)
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (Territorio t : controlador.getTerritorios()) {
             int playerId = t.getPlayerId();
             if (playerId > 0 && playerId <= controlador.getJogadores().size()) {
                 Jogador dono = controlador.getJogadorPorId(playerId);
                 Color c = dono.getCor().getGdxColor();
-                shapeRenderer.setColor(c.r, c.g, c.b, 0.7f);
+                shapeRenderer.setColor(c.r, c.g, c.b, 0.7f); // 0.7f de transparência
                 
                 float[] vertices = t.getArea().getTransformedVertices();
                 ShortArray indices = triangulator.computeTriangles(vertices);
@@ -530,13 +597,63 @@ public class TelaDeJogo {
         }
         shapeRenderer.end();
 
-        // Contorno
+        // 2. CONTORNOS PADRÃO (Cinza fino)
+        Gdx.gl.glLineWidth(1); // Espessura normal
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         for (Territorio t : controlador.getTerritorios()) {
             shapeRenderer.setColor(Color.GRAY);
             shapeRenderer.polygon(t.getArea().getTransformedVertices());
         }
         shapeRenderer.end();
+
+        // 3. --- LÓGICA DE DESTAQUE (HIGHLIGHTS) ---
+        // Verifica se há algum território selecionado (seja para ataque ou movimento)
+        Territorio selecionado = (territorioAtacante != null) ? territorioAtacante : territorioOrigemMovimento;
+
+        if (selecionado != null) {
+            Gdx.gl.glLineWidth(4); // Aumenta a espessura da linha para destacar
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+            // A. Destaca a ORIGEM (Branco)
+            shapeRenderer.setColor(Color.WHITE);
+            shapeRenderer.polygon(selecionado.getArea().getTransformedVertices());
+
+            // B. Destaca os VIZINHOS VÁLIDOS
+            for (Territorio t : controlador.getTerritorios()) {
+                // Pula a própria origem
+                if (t.equals(selecionado)) continue;
+
+                // Só processa se for adjacente (vizinho)
+                if (controlador.getMapa().isAdjacente(selecionado, t)) {
+                    
+                    boolean desenharDestaque = false;
+
+                    // Regras de Cor dependendo da Fase
+                    if (controlador.getEstadoTurno() == EstadoTurno.ATACANDO) {
+                        // No ataque, vizinho deve ser INIMIGO
+                        boolean isInimigo = (t.getPlayerId() != selecionado.getPlayerId());
+                        if (isInimigo) {
+                            shapeRenderer.setColor(Color.RED); // Alvo de Ataque
+                            desenharDestaque = true;
+                        }
+                    } 
+                    else if (controlador.getEstadoTurno() == EstadoTurno.MOVIMENTANDO) {
+                        // Na movimentação, vizinho deve ser ALIADO (meu)
+                        boolean isAliado = (t.getPlayerId() == selecionado.getPlayerId());
+                        if (isAliado) {
+                            shapeRenderer.setColor(Color.YELLOW); // Alvo de Movimento
+                            desenharDestaque = true;
+                        }
+                    }
+
+                    if (desenharDestaque) {
+                        shapeRenderer.polygon(t.getArea().getTransformedVertices());
+                    }
+                }
+            }
+            shapeRenderer.end();
+            Gdx.gl.glLineWidth(1); // Reseta a espessura para não afetar outras coisas
+        }
     }
 
     public void resize(int width, int height) {
