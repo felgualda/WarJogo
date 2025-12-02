@@ -31,11 +31,11 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           chmod +x ./gradlew
-          ./gradlew :core:build -x :desktop:build -x :lwjgl3:build --no-daemon
+          ./gradlew :core:classes -x :desktop:build -x :lwjgl3:build --no-daemon
 
       - name: Build core module only (Windows)
         if: runner.os == 'Windows'
-        run: .\gradlew.bat :core:build -x :desktop:build -x :lwjgl3:build --no-daemon
+        run: .\gradlew.bat :core:classes -x :desktop:build -x :lwjgl3:build --no-daemon
         shell: powershell
 
       - name: Run Unit Tests (Unix-like)
