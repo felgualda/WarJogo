@@ -2,6 +2,7 @@ package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -15,6 +16,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.CorJogador;
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.TipoJogador;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,7 +84,8 @@ public class TelaDeSelecaoDeJogadores {
         this.iniciarCallback = iniciarCallback;
 
         // Usa as constantes de viewport e paths
-        stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        // stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        stage = new Stage(new ExtendViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
         skin = new Skin(Gdx.files.internal(PATH_SKIN));
         background = new Texture(Gdx.files.internal(PATH_BACKGROUND));
 
@@ -373,17 +376,40 @@ public class TelaDeSelecaoDeJogadores {
     }
 
     // --- CICLO DE VIDA ---
-
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Certifique-se de importar GL20
+
+        stage.getViewport().apply(); // Garante que a câmera está certa
+
+        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
         stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
+        
+        // Lógica para esticar o fundo para cobrir qualquer tamanho de tela
+        float screenW = stage.getViewport().getWorldWidth();
+        float screenH = stage.getViewport().getWorldHeight();
+        
+        // Desenha o fundo um pouco maior e centralizado para cobrir tudo
+        // A lógica abaixo centraliza a imagem de fundo na câmera
+        float bgW = background.getWidth();
+        float bgH = background.getHeight();
+        float scale = Math.max(screenW / bgW, screenH / bgH); // Escala para preencher (Cover)
+        
+        float drawW = bgW * scale;
+        float drawH = bgH * scale;
+        float drawX = (screenW - drawW) / 2;
+        float drawY = (screenH - drawH) / 2;
+
+        stage.getBatch().draw(background, drawX, drawY, drawW, drawH);
+        
         stage.getBatch().end();
+
         stage.act(delta);
         stage.draw();
     }
 
     public void resize(int width, int height) {
+        // 'true' centraliza a UI na tela, evitando que botões fiquem no canto
         stage.getViewport().update(width, height, true);
     }
 
