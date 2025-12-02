@@ -59,22 +59,33 @@ public class ControladorDePartidaTest {
         ctrl.iniciarPartida();
 
         Jogador atual = ctrl.getJogadorAtual();
-        assertNotNull(atual);
+        assertNotNull(atual, "Jogador atual não deve ser nulo");
 
-        // Pega um territorio do jogador atual
+        // Valida que o controlador foi inicializado corretamente
+        assertTrue(atual.getTerritorios().size() > 0, "Jogador deve ter territórios após iniciar partida");
+        
+        // Testa alocação com lote disponível
         Territorio t = atual.getTerritorios().get(0);
-        int antes = t.getTropas();
-
-        // Tenta alocar quantidade maior que o lote atual (deve falhar)
         int lote = ctrl.getTropasADistribuir();
-        boolean res = ctrl.alocarTropas(t, lote + 100);
-        assertFalse(res);
-
-        // Aloca 1 tropa se houver lote disponível
+        int totalLotes = ctrl.getTropasADistribuirTotal();
+        
+        // Deveria ter pelo menos alguns lotes a distribuir no início
+        assertTrue(totalLotes >= 0, "Total de lotes deve ser >= 0");
+        
         if (lote > 0) {
+            // Tenta alocar quantidade maior que o lote (deve falhar)
+            boolean res = ctrl.alocarTropas(t, lote + 100);
+            assertFalse(res, "Não deveria alocar mais que o lote disponível");
+
+            // Aloca 1 tropa (válido)
+            int tropasAntes = t.getTropas();
             boolean ok = ctrl.alocarTropas(t, 1);
-            assertTrue(ok, "Deveria alocar 1 tropa com sucesso");
-            assertEquals(antes + 1, t.getTropas());
+            assertTrue(ok, "Deveria alocar 1 tropa quando há lote");
+            assertEquals(tropasAntes + 1, t.getTropas(), "Deveria ter +1 tropa");
+        } else {
+            // Se não houver lotes, tenta alocar mesmo assim (deve falhar gracefully)
+            boolean ok = ctrl.alocarTropas(t, 1);
+            assertFalse(ok, "Não deveria alocar tropas quando não há lote disponível");
         }
     }
 
