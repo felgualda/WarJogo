@@ -2,6 +2,7 @@ package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -15,6 +16,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.gruposete.war.core.CorJogador;
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.TipoJogador;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,7 +84,8 @@ public class TelaDeSelecaoDeJogadores {
         this.iniciarCallback = iniciarCallback;
 
         // Usa as constantes de viewport e paths
-        stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        // stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        stage = new Stage(new ExtendViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
         skin = new Skin(Gdx.files.internal(PATH_SKIN));
         background = new Texture(Gdx.files.internal(PATH_BACKGROUND));
 
@@ -299,23 +302,31 @@ public class TelaDeSelecaoDeJogadores {
 
     private void cycleState(CorJogador cor, boolean proximo) {
         TipoJogador estadoAtual = estadosDosJogadores.get(cor);
+        
+        // 1. Calcula qual seria o próximo estado natural
         TipoJogador novoEstado = proximo ? estadoAtual.proximo() : estadoAtual.anterior();
 
-        // Validação de Restrição (Máx 3 'NENHUM' / Mín 3 Jogadores)
+        // 2. Verifica se o novo estado seria "NENHUM" e se isso violaria a regra mínima
         if (novoEstado == TipoJogador.NENHUM) {
-            int nenhumCount = 0;
+            
+            // Conta quantos jogadores ativos existem NO MOMENTO
+            int jogadoresAtivos = 0;
             for (TipoJogador tipo : estadosDosJogadores.values()) {
-                if (tipo == TipoJogador.NENHUM) nenhumCount++;
+                if (tipo != TipoJogador.NENHUM) jogadoresAtivos++;
             }
-            // Se já tem 3 Nenhuns (ou seja, só 3 jogadores ativos), bloqueia adicionar mais um
-            if (nenhumCount >= (CorJogador.values().length - MIN_JOGADORES) && estadoAtual != TipoJogador.NENHUM) {
-                return;
+
+            // Se já estamos no limite mínimo (3) e tentarmos transformar um ativo em NENHUM...
+            // ...nós PULAMOS o estado NENHUM e vamos para o próximo da fila.
+            // Ex: Se estava em HUMANO e ia para NENHUM (Bloqueado) -> Pula para IA.
+            if (jogadoresAtivos <= MIN_JOGADORES && estadoAtual != TipoJogador.NENHUM) {
+                novoEstado = proximo ? novoEstado.proximo() : novoEstado.anterior();
             }
         }
 
+        // 3. Aplica a mudança
         estadosDosJogadores.put(cor, novoEstado);
 
-        // Atualiza Visual
+        // 4. Atualiza Visualmente
         Image icone = iconesDeEstado.get(cor);
         switch (novoEstado) {
             case NENHUM: icone.setDrawable(drawNoPlayer); break;
@@ -323,7 +334,9 @@ public class TelaDeSelecaoDeJogadores {
             case IA:     icone.setDrawable(drawAI); break;
         }
         icone.setColor(cor.getGdxColor());
-        errorLabel.setText("");
+        
+        // Limpa mensagem de erro se houver
+        if (errorLabel != null) errorLabel.setText("");
     }
 
     public void resetarEstado() {
@@ -373,17 +386,40 @@ public class TelaDeSelecaoDeJogadores {
     }
 
     // --- CICLO DE VIDA ---
-
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Certifique-se de importar GL20
+
+        stage.getViewport().apply(); // Garante que a câmera está certa
+
+        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
         stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
+        
+        // Lógica para esticar o fundo para cobrir qualquer tamanho de tela
+        float screenW = stage.getViewport().getWorldWidth();
+        float screenH = stage.getViewport().getWorldHeight();
+        
+        // Desenha o fundo um pouco maior e centralizado para cobrir tudo
+        // A lógica abaixo centraliza a imagem de fundo na câmera
+        float bgW = background.getWidth();
+        float bgH = background.getHeight();
+        float scale = Math.max(screenW / bgW, screenH / bgH); // Escala para preencher (Cover)
+        
+        float drawW = bgW * scale;
+        float drawH = bgH * scale;
+        float drawX = (screenW - drawW) / 2;
+        float drawY = (screenH - drawH) / 2;
+
+        stage.getBatch().draw(background, drawX, drawY, drawW, drawH);
+        
         stage.getBatch().end();
+
         stage.act(delta);
         stage.draw();
     }
 
     public void resize(int width, int height) {
+        // 'true' centraliza a UI na tela, evitando que botões fiquem no canto
         stage.getViewport().update(width, height, true);
     }
 

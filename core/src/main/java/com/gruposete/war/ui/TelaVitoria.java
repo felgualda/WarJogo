@@ -13,7 +13,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport; // Importante
+
 import com.gruposete.war.core.Jogador;
 
 public class TelaVitoria {
@@ -22,7 +23,7 @@ public class TelaVitoria {
     private static final float VIEWPORT_W = 1280f;
     private static final float VIEWPORT_H = 720f;
     private static final String PATH_SKIN = "ui/uiskin.json";
-    private static final String PATH_BG = "TelaInicialBackground.png"; // Reutiliza fundo inicial
+    private static final String PATH_BG = "TelaInicialBackground.png";
 
     private static final float FONT_SCALE_TITLE = 3.0f;
     private static final float FONT_SCALE_TEXT = 1.5f;
@@ -34,7 +35,6 @@ public class TelaVitoria {
     private final Runnable menuCallback;
     private final Jogador vencedor;
 
-    // Fontes
     private BitmapFont fontTitulo;
     private BitmapFont fontTexto;
 
@@ -42,7 +42,8 @@ public class TelaVitoria {
         this.menuCallback = menuCallback;
         this.vencedor = vencedor;
 
-        stage = new Stage(new FitViewport(VIEWPORT_W, VIEWPORT_H));
+        // 1. Viewport Responsivo
+        stage = new Stage(new ExtendViewport(VIEWPORT_W, VIEWPORT_H));
         Gdx.input.setInputProcessor(stage);
 
         carregarAssets();
@@ -61,8 +62,10 @@ public class TelaVitoria {
     }
 
     private void construirUI() {
+        // Tabela Raiz que centraliza tudo
         Table mainTable = new Table();
         mainTable.setFillParent(true);
+        mainTable.center(); // Centraliza o conteúdo na tela
         mainTable.pad(50);
 
         // 1. Título "VITORIA"
@@ -97,10 +100,10 @@ public class TelaVitoria {
             }
         });
 
-        // Layout
+        // Montagem
         mainTable.add(lblTitulo).padBottom(20).row();
         mainTable.add(lblNome).padBottom(50).row();
-        mainTable.add(lblObjetivo).width(800).padBottom(60).row();
+        mainTable.add(lblObjetivo).width(800).center().padBottom(60).row();
         mainTable.add(btnMenu).width(300).height(60);
 
         stage.addActor(mainTable);
@@ -110,8 +113,26 @@ public class TelaVitoria {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        stage.getViewport().apply();
+        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
+
         stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
+        
+        // --- Fundo Responsivo ---
+        float screenW = stage.getViewport().getWorldWidth();
+        float screenH = stage.getViewport().getWorldHeight();
+        
+        float bgW = background.getWidth();
+        float bgH = background.getHeight();
+        float scale = Math.max(screenW / bgW, screenH / bgH);
+        
+        float drawW = bgW * scale;
+        float drawH = bgH * scale;
+        float drawX = (screenW - drawW) / 2;
+        float drawY = (screenH - drawH) / 2;
+
+        stage.getBatch().draw(background, drawX, drawY, drawW, drawH);
+        
         stage.getBatch().end();
 
         stage.act(delta);
@@ -119,6 +140,7 @@ public class TelaVitoria {
     }
 
     public void resize(int width, int height) {
+        // True = Centraliza a câmera no mundo extendido
         stage.getViewport().update(width, height, true);
     }
 

@@ -9,66 +9,40 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class TelaDeConfig {
 
-    // --- CONSTANTES DE CONFIGURAÇÃO ---
     private static final float VIEWPORT_WIDTH = 1280f;
     private static final float VIEWPORT_HEIGHT = 720f;
 
-    // --- CONSTANTES DE CAMINHOS ---
     private static final String PATH_SKIN = "ui/uiskin.json";
-    private static final String PATH_BACKGROUND = "TelaRegrasBackground.png"; // (Mantido conforme seu original)
+    private static final String PATH_BACKGROUND = "TelaRegrasBackground.png";
 
-    // --- CONSTANTES DE LAYOUT ---
-    // Título
-    private static final float TITULO_X = 525f;
-    private static final float TITULO_Y = 620f;
-    private static final float FONT_SCALE_TITULO = 2.0f;
-
-    // Volume
-    private static final float LABEL_VOL_X = 440f;
-    private static final float LABEL_VOL_Y = 500f;
-    private static final float SLIDER_X = 440f;
-    private static final float SLIDER_Y = 450f;
+    // Tamanhos fixos para elementos
     private static final float SLIDER_W = 400f;
-    private static final float SLIDER_H = 40f;
-
-    // Daltonismo
-    private static final float CHECK_X = 440f;
-    private static final float CHECK_Y = 380f;
-
-    // Botão Voltar
-    private static final float BTN_X = 460f;
-    private static final float BTN_Y = 100f;
     private static final float BTN_W = 300f;
     private static final float BTN_H = 50f;
 
-    // Estilo Geral
+    private static final float FONT_SCALE_TITULO = 2.0f;
     private static final float FONT_SCALE_TEXTO = 1.5f;
 
-    // --- VARIÁVEIS DA CLASSE ---
     public Stage stage;
     private Skin skin;
     private Texture background;
     private Runnable voltarCallback;
 
-    // Fontes (Armazenadas para dar dispose depois)
     private BitmapFont fontTitulo;
     private BitmapFont fontTexto;
 
     public TelaDeConfig(Runnable voltarCallback) {
         this.voltarCallback = voltarCallback;
 
-        // 1. Inicialização
-        stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        // 1. ExtendViewport
+        stage = new Stage(new ExtendViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
         Gdx.input.setInputProcessor(stage);
 
-        // 2. Carregamento
         carregarAssets();
-
-        // 3. Construção da UI
         construirInterface();
     }
 
@@ -76,7 +50,6 @@ public class TelaDeConfig {
         skin = new Skin(Gdx.files.internal(PATH_SKIN));
         background = new Texture(Gdx.files.internal(PATH_BACKGROUND));
 
-        // Cria as fontes manualmente (Seguro se o skin não tiver nomes padrão)
         fontTitulo = new BitmapFont();
         fontTitulo.getData().setScale(FONT_SCALE_TITULO);
 
@@ -85,31 +58,30 @@ public class TelaDeConfig {
     }
 
     private void construirInterface() {
+        // Tabela Raiz
+        Table root = new Table();
+        root.setFillParent(true);
+        root.center();
+        stage.addActor(root);
+
         // --- Título ---
         Label.LabelStyle tituloStyle = new Label.LabelStyle(fontTitulo, skin.getColor("white"));
         Label titulo = new Label("Configurações", tituloStyle);
-        titulo.setPosition(TITULO_X, TITULO_Y);
-        titulo.setAlignment(Align.center);
-        stage.addActor(titulo);
+        root.add(titulo).padBottom(80).row();
 
-        // --- Label Volume ---
+        // --- Volume ---
         Label.LabelStyle textoStyle = new Label.LabelStyle(fontTexto, skin.getColor("white"));
-        Label labelVolume = new Label("Volume", textoStyle);
-        labelVolume.setPosition(LABEL_VOL_X, LABEL_VOL_Y);
-        stage.addActor(labelVolume);
+        root.add(new Label("Volume", textoStyle)).padBottom(10).row();
 
-        // --- Slider Volume ---
         Slider sliderVolume = new Slider(0f, 1f, 0.01f, false, skin);
         sliderVolume.setValue(0.5f);
-        sliderVolume.setSize(SLIDER_W, SLIDER_H);
-        sliderVolume.setPosition(SLIDER_X, SLIDER_Y);
-        stage.addActor(sliderVolume);
+        root.add(sliderVolume).width(SLIDER_W).padBottom(40).row();
 
-        // --- Checkbox Daltonismo ---
+        // --- Daltonismo ---
         CheckBox checkDaltonismo = new CheckBox("   Modo Daltonismo", skin);
         checkDaltonismo.getLabel().setFontScale(FONT_SCALE_TEXTO);
-        checkDaltonismo.setPosition(CHECK_X, CHECK_Y);
-        stage.addActor(checkDaltonismo);
+        // Ajuste fino na célula da tabela para centralizar visualmente
+        root.add(checkDaltonismo).padBottom(100).row();
 
         // --- Botão Voltar ---
         TextButton.TextButtonStyle btnStyle = new TextButton.TextButtonStyle();
@@ -119,26 +91,38 @@ public class TelaDeConfig {
         btnStyle.font = fontTexto;
 
         TextButton btnVoltar = new TextButton("Voltar", btnStyle);
-        btnVoltar.setSize(BTN_W, BTN_H);
-        btnVoltar.setPosition(BTN_X, BTN_Y);
-        btnVoltar.align(Align.center);
-
         btnVoltar.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (voltarCallback != null) voltarCallback.run();
             }
         });
-        stage.addActor(btnVoltar);
+        
+        root.add(btnVoltar).size(BTN_W, BTN_H);
     }
 
     public void render(float delta) {
-        // Limpeza de tela (Prevenção de artefatos visuais)
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        stage.getViewport().apply();
+        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
+
         stage.getBatch().begin();
-        stage.getBatch().draw(background, 0, 0, stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight());
+        
+        // Fundo Responsivo
+        float screenW = stage.getViewport().getWorldWidth();
+        float screenH = stage.getViewport().getWorldHeight();
+        float bgW = background.getWidth();
+        float bgH = background.getHeight();
+        float scale = Math.max(screenW / bgW, screenH / bgH);
+        float drawW = bgW * scale;
+        float drawH = bgH * scale;
+        float drawX = (screenW - drawW) / 2;
+        float drawY = (screenH - drawH) / 2;
+
+        stage.getBatch().draw(background, drawX, drawY, drawW, drawH);
+        
         stage.getBatch().end();
 
         stage.act(delta);
@@ -153,8 +137,6 @@ public class TelaDeConfig {
         stage.dispose();
         skin.dispose();
         background.dispose();
-
-        // IMPORTANTE: Limpar as fontes que criamos manualmente
         if (fontTitulo != null) fontTitulo.dispose();
         if (fontTexto != null) fontTexto.dispose();
     }
