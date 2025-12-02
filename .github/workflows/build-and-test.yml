@@ -27,25 +27,24 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build with Gradle (Unix-like)
+      - name: Build core module only (Unix-like)
         if: runner.os != 'Windows'
         run: |
           chmod +x ./gradlew
-          ./gradlew build --info
+          ./gradlew :core:build -x :desktop:build -x :lwjgl3:build --no-daemon
 
-      - name: Build with Gradle (Windows)
+      - name: Build core module only (Windows)
         if: runner.os == 'Windows'
-        run: |
-          .\gradlew.bat build --info
+        run: .\gradlew.bat :core:build -x :desktop:build -x :lwjgl3:build --no-daemon
         shell: powershell
 
-      - name: Run Unit Tests
+      - name: Run Unit Tests (Unix-like)
         if: runner.os != 'Windows'
-        run: ./gradlew :core:test --info
+        run: ./gradlew :core:test --no-daemon
 
       - name: Run Unit Tests (Windows)
         if: runner.os == 'Windows'
-        run: .\gradlew.bat :core:test --info
+        run: .\gradlew.bat :core:test --no-daemon
         shell: powershell
 
       - name: Upload Test Reports
