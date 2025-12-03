@@ -1,7 +1,7 @@
 # ⚔️ WarJogo - Grupo 7 (Engenharia de Software II)
 
 Um projeto de implementação do jogo **War** utilizando **Java** e o framework **libGDX**. Este projeto foi gerado com [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
-
+Documentação referente ao jogo, como requisitos e análise de riscos: https://drive.google.com/file/d/1-0hCkskSjQH_A5zjcHE9YAWiejNya6Jr/view?usp=sharing
 ---
 
 ## 🚀 Como Executar (Entrega Final)
