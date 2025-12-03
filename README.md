@@ -23,7 +23,7 @@ A entrega está organizada na pasta `Jogo_War_Grupo7` da seguinte forma:
 
 ### Instruções de Execução por Sistema Operacional
 
-#### 1. Windows (Recomendado) - https://drive.google.com/drive/folders/12R2fg5o_6ycnnVwxyXl1VrKrq0JLCg5g?usp=sharing
+#### 1. Windows (Recomendado) - https://drive.google.com/drive/folders/14SOZJVoIDb_kca6wTPZUo-VBV8_0vEO3?usp=sharing
 
 Esta versão já inclui o Java necessário embutido na pasta.
 
@@ -42,7 +42,7 @@ Esta versão já inclui o Java necessário embutido na pasta.
     ```
     > **Nota:** Se o arquivo não abrir, garanta que ele tem **permissão de execução**: *Botão direito -> Propriedades -> Permissões -> "Permitir executar como programa"*.
 
-#### 3. macOS - https://drive.google.com/drive/folders/12R2fg5o_6ycnnVwxyXl1VrKrq0JLCg5g?usp=drive_link
+#### 3. macOS - https://drive.google.com/drive/folders/1CiwerGcQjIO7iqXyqbJRXJnh_DfrwYiF?usp=sharing
 
 Na pasta `MAC`, você encontrará duas subpastas. Escolha a correta para o seu processador:
 
