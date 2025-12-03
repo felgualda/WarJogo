@@ -32,10 +32,12 @@ public class DialogoResultadoDados extends Dialog {
             tableAtk.add(dado).pad(5).row();
         }
 
-        // --- CORREÇÃO AQUI (Separando o Label da Cell) ---
+        // --- CORREÇÃO DO ERRO DO PRINT ---
+        // Errado: tableAtk.add(...).color(...) -> Célula não tem cor!
+        // Certo: Cria o Label -> Pinta o Label -> Adiciona
         Label lblPerdasA = new Label("-" + resultado.perdasAtacante + " tropas", skin);
-        lblPerdasA.setColor(Color.ORANGE); // Aplica a cor no Label
-        tableAtk.add(lblPerdasA).padTop(10); // Adiciona na tabela
+        lblPerdasA.setColor(Color.ORANGE); 
+        tableAtk.add(lblPerdasA).padTop(10); 
 
         // --- COLUNA DEFENSOR ---
         Table tableDef = new Table();
@@ -49,10 +51,10 @@ public class DialogoResultadoDados extends Dialog {
             tableDef.add(dado).pad(5).row();
         }
 
-        // --- CORREÇÃO AQUI TAMBÉM ---
+        // --- CORREÇÃO DA SEGUNDA COLUNA ---
         Label lblPerdasD = new Label("-" + resultado.perdasDefensor + " tropas", skin);
-        lblPerdasD.setColor(Color.ORANGE); // Aplica a cor no Label
-        tableDef.add(lblPerdasD).padTop(10); // Adiciona na tabela
+        lblPerdasD.setColor(Color.ORANGE);
+        tableDef.add(lblPerdasD).padTop(10);
 
         // --- VS ---
         Label vsLabel = new Label("VS", skin);
