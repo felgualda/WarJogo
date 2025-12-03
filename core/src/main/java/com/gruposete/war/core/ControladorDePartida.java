@@ -144,6 +144,10 @@ public class ControladorDePartida {
         }
     }
 
+    public void descartarReforcosRestantes() {
+        this.filaDeReforcos.clear(); // Esvazia a fila, zerando as tropas a distribuir
+    }
+
     /**
      * Avança para a próxima fase dentro do turno de um jogador.
      */
@@ -311,17 +315,17 @@ public class ControladorDePartida {
 
     // --- AÇÕES DO JOGADOR: ATAQUE ---
 
-    public AtaqueEstado realizarAtaque(Territorio atacante, Territorio defensor) {
+    public ResultadoCombate realizarAtaque(Territorio atacante, Territorio defensor) {
 
         // Lógica Unificada: Pega o defensor pelo ID
         Jogador jogadorDefensor = getJogadorPorId(defensor.getPlayerId());
 
         // Executa lógica de dados
         AtaqueLogica logica = new AtaqueLogica(atacante, defensor, this.jogadorAtual, jogadorDefensor, this.mapa);
-        AtaqueEstado resultado = logica.executarUmaRodada();
+        ResultadoCombate resultado = logica.executarUmaRodada();
 
         // Processa Conquista
-        if (resultado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+        if (resultado.estado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
             this.conquistouTerritorioNesteTurno = true;
 
             // Transferência de Posse (Lógica de Negócio)

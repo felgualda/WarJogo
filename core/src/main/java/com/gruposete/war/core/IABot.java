@@ -88,6 +88,7 @@ public class IABot {
             safetyCounter++;
             if (safetyCounter > 300) {
                 Gdx.app.log("IA", "ALERTA: Loop de distribuição travou. Forçando saída.");
+                controlador.descartarReforcosRestantes();
                 break;
             }
 
@@ -243,9 +244,9 @@ public class IABot {
                         if (origem.getTropas() < alvo.getTropas() * 3) break;
                     }
 
-                    AtaqueEstado estado = controlador.realizarAtaque(origem, alvo);
+                    ResultadoCombate resultado = controlador.realizarAtaque(origem, alvo);
 
-                    if (estado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
+                    if (resultado.estado == AtaqueEstado.TERRITORIO_CONQUISTADO) {
                         conquistouCarta = true;
                         int disponivel = origem.getTropas() - 1;
 

@@ -5,8 +5,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
-
 public class AtaqueLogica {
+    // ... (atributos iguais) ...
     private Territorio territorioAtacante;
     private Territorio territorioDefensor;
     private Jogador jogadorAtacante;
@@ -22,63 +22,58 @@ public class AtaqueLogica {
         this.mapa = mapa;
     }
 
-    public AtaqueEstado executarUmaRodada(){
-        if (territorioAtacante.getTropas() <= 1) { return AtaqueEstado.TROPAS_INSUFICIENTES; }
-        if (mapa.isAdjacente(territorioDefensor, territorioAtacante) == false) { return AtaqueEstado.SEM_ADJACENCIA; }
-
-        int qntdDadosAtacante = territorioAtacante.getTropas() - 1;
-        int qntdDadosDefensor = territorioDefensor.getTropas();
-        if (qntdDadosAtacante > 3) { qntdDadosAtacante = 3; }
-        if (qntdDadosDefensor > 3) { qntdDadosDefensor = 3; }
-
-        rolarDados(qntdDadosAtacante, qntdDadosDefensor);
-
-        if (territorioAtacante.getTropas() == 1) {
-            return AtaqueEstado.TROPAS_INSUFICIENTES;
+    // MUDANÇA: Agora retorna ResultadoCombate em vez de AtaqueEstado
+    public ResultadoCombate executarUmaRodada() {
+        if (territorioAtacante.getTropas() <= 1) { 
+            return new ResultadoCombate(AtaqueEstado.TROPAS_INSUFICIENTES, new Integer[]{}, new Integer[]{}, 0, 0); 
         }
-        if (territorioDefensor.getTropas() == 0) {
-            territorioDefensor.setPlayerId(territorioAtacante.getPlayerId());        // O controlador da partida atualiza as listas de territórios dos jogadores
-            return AtaqueEstado.TERRITORIO_CONQUISTADO;                              // e pede ao usuário quantas tropas mover e, em seguida, chama um método para decrementar o atacante e incrementar o defensor.
+        if (!mapa.isAdjacente(territorioDefensor, territorioAtacante)) { 
+            return new ResultadoCombate(AtaqueEstado.SEM_ADJACENCIA, new Integer[]{}, new Integer[]{}, 0, 0); 
         }
 
-        return AtaqueEstado.CONTINUAR_POSSIVEL;
+        int qntdDadosAtacante = Math.min(territorioAtacante.getTropas() - 1, 3);
+        int qntdDadosDefensor = Math.min(territorioDefensor.getTropas(), 3);
+
+        return rolarDados(qntdDadosAtacante, qntdDadosDefensor);
     }
 
-    private void rolarDados(int qntdDadosAtacante, int qntdDadosDefensor){
+    private ResultadoCombate rolarDados(int qntdDadosAtacante, int qntdDadosDefensor){
+        Integer[] dadosAtacante = new Integer[qntdDadosAtacante]; // Array tamanho exato
+        Integer[] dadosDefensor = new Integer[qntdDadosDefensor]; // Array tamanho exato
 
-        Integer[] dadosAtacante = new Integer[3];
-        Integer[] dadosDefensor = new Integer[3];
+        // Rolagem
+        for (int i = 0; i < qntdDadosAtacante; i++) dadosAtacante[i] = random.nextInt(6) + 1;
+        for (int i = 0; i < qntdDadosDefensor; i++) dadosDefensor[i] = random.nextInt(6) + 1;
 
-        // Rolagem dos dados
+        // Ordenação Decrescente
+        Arrays.sort(dadosAtacante, Collections.reverseOrder());
+        Arrays.sort(dadosDefensor, Collections.reverseOrder());
 
-        for (int i = 0; i < qntdDadosAtacante; i++){
-            dadosAtacante[i] = random.nextInt(6) + 1;
-        }
+        int perdasA = 0;
+        int perdasD = 0;
+        int comparacoes = Math.min(qntdDadosAtacante, qntdDadosDefensor);
 
-        for (int i = 0; i < qntdDadosDefensor; i++){
-            dadosDefensor[i] = random.nextInt(6) + 1;
-        }
-
-        // Ordena em ordem decrescente (maior dado contra maior dado, menor dado contra menor dado)
-
-        Arrays.sort(dadosAtacante, Comparator.nullsLast(Collections.reverseOrder()));
-        Arrays.sort(dadosDefensor, Comparator.nullsLast(Collections.reverseOrder()));
-
-        // Verificar, para cada dado, quem ganhou
-
-        for (int i = 0; i < qntdDadosAtacante; i++){
-            if (dadosDefensor[i] != null){
-                if (dadosDefensor[i] < dadosAtacante[i]) {
-                    territorioDefensor.decrementarTropas();
-                }
-                else {
-                    territorioAtacante.decrementarTropas();
-                }
-            }
-
-            else {
-                territorioDefensor.decrementarTropas();
+        // Comparação
+        for (int i = 0; i < comparacoes; i++){
+            if (dadosDefensor[i] < dadosAtacante[i]) {
+                perdasD++;
+            } else {
+                perdasA++;
             }
         }
+
+        // Aplica danos
+        for(int i=0; i<perdasD; i++) territorioDefensor.decrementarTropas();
+        for(int i=0; i<perdasA; i++) territorioAtacante.decrementarTropas();
+
+        // Define estado final
+        AtaqueEstado estadoFinal = AtaqueEstado.CONTINUAR_POSSIVEL;
+        if (territorioAtacante.getTropas() == 1) estadoFinal = AtaqueEstado.TROPAS_INSUFICIENTES;
+        if (territorioDefensor.getTropas() == 0) {
+            territorioDefensor.setPlayerId(territorioAtacante.getPlayerId());
+            estadoFinal = AtaqueEstado.TERRITORIO_CONQUISTADO;
+        }
+
+        return new ResultadoCombate(estadoFinal, dadosAtacante, dadosDefensor, perdasA, perdasD);
     }
 }
