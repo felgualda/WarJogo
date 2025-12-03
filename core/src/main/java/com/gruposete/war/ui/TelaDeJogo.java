@@ -575,6 +575,8 @@ public class TelaDeJogo {
 
     private void desenharMapa() {
         shapeRenderer.setProjectionMatrix(gameCamera.combined);
+
+        boolean modoDaltonico = Gdx.app.getPreferences("WarJogoConfigs").getBoolean("daltonismo", false);
         
         // 1. DESENHO BASE (Preenchimento colorido dos países)
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -582,7 +584,7 @@ public class TelaDeJogo {
             int playerId = t.getPlayerId();
             if (playerId > 0 && playerId <= controlador.getJogadores().size()) {
                 Jogador dono = controlador.getJogadorPorId(playerId);
-                Color c = dono.getCor().getGdxColor();
+                Color c = dono.getCor().getColor(modoDaltonico);
                 shapeRenderer.setColor(c.r, c.g, c.b, 0.7f); // 0.7f de transparência
                 
                 float[] vertices = t.getArea().getTransformedVertices();

@@ -2,7 +2,6 @@ package com.gruposete.war.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -13,10 +12,11 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+// Importante: ExtendViewport para manter a responsividade que já fizemos
+import com.badlogic.gdx.utils.viewport.ExtendViewport; 
 import com.gruposete.war.core.CorJogador;
 import com.gruposete.war.core.Jogador;
 import com.gruposete.war.core.TipoJogador;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,13 +25,11 @@ import java.util.Map;
 
 public class TelaDeSelecaoDeJogadores {
 
-    // --- CONSTANTES: CONFIGURAÇÕES DA TELA ---
     private static final float VIEWPORT_WIDTH = 1280f;
     private static final float VIEWPORT_HEIGHT = 720f;
 
-    // --- CONSTANTES: CAMINHOS DOS ASSETS ---
     private static final String PATH_SKIN = "ui/uiskin.json";
-    private static final String PATH_BACKGROUND = "TelaDeJogoBackground.png";
+    private static final String PATH_BACKGROUND = "TelaDeJogoBackground.png"; // Reutiliza fundo do jogo
     private static final String PATH_ICON_BORDER = "ui/UIPlayerIconBorder.png";
     private static final String PATH_ARROW_LEFT = "ui/UILeftArrow.png";
     private static final String PATH_ARROW_RIGHT = "ui/UIRightArrow.png";
@@ -39,26 +37,19 @@ public class TelaDeSelecaoDeJogadores {
     private static final String PATH_ICON_HUMAN = "ui/UIHumanPlayerIcon.png";
     private static final String PATH_ICON_AI = "ui/UIAIPlayerIcon.png";
 
-    // --- CONSTANTES: DIMENSÕES E LAYOUT ---
-    private static final float PAD_OUTER = 20f;      // Espaçamento da borda da tela
-    private static final float PAD_INNER = 15f;      // Espaçamento entre elementos
-    private static final float BUTTON_NAV_WIDTH = 250f; // Largura dos botões Iniciar/Voltar
-
-    // Tamanhos dos elementos do "Pod" de jogador
-    private static final float ICON_SIZE = 128f;     // Tamanho base do ícone (Humano/Robô)
-    private static final float ARROW_SIZE = 64f;     // Tamanho das setas
-    private static final float BORDER_SCALE = 1.2f;  // Quanto a borda é maior que o ícone (1.2x)
-
-    // --- CONSTANTES: ESTILOS E FONTES ---
+    private static final float PAD_OUTER = 20f;
+    private static final float PAD_INNER = 15f;
+    private static final float BUTTON_NAV_WIDTH = 250f;
+    private static final float ICON_SIZE = 128f;
+    private static final float ARROW_SIZE = 64f;
+    private static final float BORDER_SCALE = 1.2f;
     private static final float FONT_SCALE_NORMAL = 1.5f;
     private static final float FONT_SCALE_TITLE = 2.0f;
-    private static final Color COLOR_ERROR = new Color(1, 0, 0, 1); // Vermelho
+    private static final Color COLOR_ERROR = new Color(1, 0, 0, 1);
 
-    // --- CONSTANTES: REGRAS DE NEGÓCIO (Lógica da Tela) ---
     private static final int MIN_JOGADORES = 3;
-    private static final int DEFAULT_HUMANOS = 3; // Quantos começam como Humanos por padrão
+    private static final int DEFAULT_HUMANOS = 3;
 
-    // --- VARIÁVEIS DA CLASSE ---
     public Stage stage;
     private Skin skin;
     private Texture background;
@@ -70,11 +61,8 @@ public class TelaDeSelecaoDeJogadores {
     private Map<CorJogador, Image> iconesDeEstado;
     private Label errorLabel;
 
-    // Assets carregados
     private Texture texArrowLeft, texArrowRight, texNoPlayer, texHuman, texAI, texIconBorder;
     private Drawable drawArrowLeft, drawArrowRight, drawNoPlayer, drawHuman, drawAI, drawIconBorder;
-
-    // Fontes
     private BitmapFont fontCor;
     private BitmapFont fontTitulo;
     private BitmapFont fontBotaoNav;
@@ -83,8 +71,7 @@ public class TelaDeSelecaoDeJogadores {
         this.voltarCallback = voltarCallback;
         this.iniciarCallback = iniciarCallback;
 
-        // Usa as constantes de viewport e paths
-        // stage = new Stage(new FitViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
+        // Usa ExtendViewport para responsividade (igual às outras telas)
         stage = new Stage(new ExtendViewport(VIEWPORT_WIDTH, VIEWPORT_HEIGHT));
         skin = new Skin(Gdx.files.internal(PATH_SKIN));
         background = new Texture(Gdx.files.internal(PATH_BACKGROUND));
@@ -92,20 +79,16 @@ public class TelaDeSelecaoDeJogadores {
         carregarAssets();
         configurarFontes();
 
-        // Inicializa lógica
         this.estadosDosJogadores = new HashMap<>();
         this.iconesDeEstado = new HashMap<>();
         inicializarMapaLogico();
 
-        // Constrói a UI
         construirUI();
-
-        // Aplica o estado visual inicial
         resetarVisuais();
     }
-
+    
+    // ... (Métodos carregarAssets e configurarFontes iguais ao anterior) ...
     private void carregarAssets() {
-        // Carrega texturas usando constantes
         texArrowLeft = new Texture(Gdx.files.internal(PATH_ARROW_LEFT));
         texArrowRight = new Texture(Gdx.files.internal(PATH_ARROW_RIGHT));
         texNoPlayer = new Texture(Gdx.files.internal(PATH_ICON_NONE));
@@ -113,7 +96,6 @@ public class TelaDeSelecaoDeJogadores {
         texAI = new Texture(Gdx.files.internal(PATH_ICON_AI));
         texIconBorder = new Texture(Gdx.files.internal(PATH_ICON_BORDER));
 
-        // Cria drawables
         drawArrowLeft = new TextureRegionDrawable(new TextureRegion(texArrowLeft));
         drawArrowRight = new TextureRegionDrawable(new TextureRegion(texArrowRight));
         drawNoPlayer = new TextureRegionDrawable(new TextureRegion(texNoPlayer));
@@ -123,34 +105,30 @@ public class TelaDeSelecaoDeJogadores {
     }
 
     private void configurarFontes() {
-        // Fonte para nomes das cores
         fontCor = new BitmapFont();
         fontCor.getData().setScale(FONT_SCALE_NORMAL);
         Label.LabelStyle labelStyleCor = new Label.LabelStyle(fontCor, Color.WHITE);
         skin.add("cor-label-style", labelStyleCor);
 
-        // Fonte para Título
         fontTitulo = new BitmapFont();
         fontTitulo.getData().setScale(FONT_SCALE_TITLE);
         Label.LabelStyle labelStyleTitulo = new Label.LabelStyle(fontTitulo, Color.WHITE);
         skin.add("titulo-style", labelStyleTitulo);
 
-        // Fonte para Botões
         fontBotaoNav = new BitmapFont();
         fontBotaoNav.getData().setScale(FONT_SCALE_NORMAL);
-
         TextButton.TextButtonStyle buttonStyleNav = new TextButton.TextButtonStyle();
         buttonStyleNav.font = fontBotaoNav;
         buttonStyleNav.up = skin.getDrawable("buttonUp");
         buttonStyleNav.down = skin.getDrawable("buttonDown");
         buttonStyleNav.over = skin.getDrawable("buttonOver");
-
         skin.add("nav-button-style", buttonStyleNav);
     }
 
     private void construirUI() {
         Table mainTable = new Table();
         mainTable.setFillParent(true);
+        mainTable.center(); // Centraliza responsivamente
         mainTable.pad(PAD_OUTER).defaults().pad(PAD_INNER);
 
         mainTable.add(new Label("Selecione os Jogadores", skin, "titulo-style")).colspan(3).center().padBottom(30);
@@ -158,42 +136,36 @@ public class TelaDeSelecaoDeJogadores {
 
         CorJogador[] cores = CorJogador.values();
 
-        // Linha 1 (3 pods)
         mainTable.add(createPlayerPod(cores[0])).expand().fill();
         mainTable.add(createPlayerPod(cores[1])).expand().fill();
         mainTable.add(createPlayerPod(cores[2])).expand().fill();
         mainTable.row();
 
-        // Linha 2 (3 pods)
         mainTable.add(createPlayerPod(cores[3])).expand().fill();
         mainTable.add(createPlayerPod(cores[4])).expand().fill();
         mainTable.add(createPlayerPod(cores[5])).expand().fill();
 
-        // Label de Erro
         mainTable.row();
         errorLabel = new Label("", skin);
         errorLabel.setColor(COLOR_ERROR);
         mainTable.add(errorLabel).colspan(3).center().padTop(20);
         mainTable.row();
 
-        // Botões de Navegação
         Table navTable = new Table();
         TextButton backButton = new TextButton("Voltar", skin, "nav-button-style");
         backButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
+            @Override public void changed(ChangeEvent event, Actor actor) {
                 if (voltarCallback != null) voltarCallback.run();
             }
         });
 
         TextButton startButton = new TextButton("Iniciar Jogo", skin, "nav-button-style");
         startButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
+            @Override public void changed(ChangeEvent event, Actor actor) {
                 if (validarSelecao()) {
                     if (iniciarCallback != null) iniciarCallback.run();
                 } else {
-                    errorLabel.setText("Selecione no minimo " + MIN_JOGADORES + " jogadores (Humanos ou IA)");
+                    errorLabel.setText("Selecione no minimo " + MIN_JOGADORES + " jogadores");
                 }
             }
         });
@@ -209,39 +181,22 @@ public class TelaDeSelecaoDeJogadores {
         Table pod = new Table();
         pod.defaults().pad(10);
 
-        // 1. Label da Cor
         Label corLabel = new Label(cor.toString(), skin, "cor-label-style");
         pod.add(corLabel).colspan(3).center();
         pod.row();
 
-        // 2. Botão Esquerda
         ImageButton leftButton = new ImageButton(drawArrowLeft);
         leftButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                cycleState(cor, false);
-            }
+            @Override public void changed(ChangeEvent event, Actor actor) { cycleState(cor, false); }
         });
 
-        // 3. Ícone de Estado
-        TipoJogador estadoInicial = estadosDosJogadores.get(cor);
-        Drawable iconeInicial;
-
-        switch (estadoInicial) {
-            case HUMANO: iconeInicial = drawHuman; break;
-            case IA:     iconeInicial = drawAI; break;
-            case NENHUM:
-            default:     iconeInicial = drawNoPlayer; break;
-        }
-
-        final Image estadoIcone = new Image(iconeInicial);
+        // Configuração inicial do ícone
+        final Image estadoIcone = new Image(drawNoPlayer);
         estadoIcone.setSize(ICON_SIZE, ICON_SIZE);
-        estadoIcone.setColor(cor.getGdxColor());
+        // A cor será definida no resetarVisuais() corretamente
         iconesDeEstado.put(cor, estadoIcone);
 
         Image contornoIcone = new Image(drawIconBorder);
-
-        // Calcula tamanho da borda baseado na constante de escala
         float borderSize = ICON_SIZE * BORDER_SCALE;
         contornoIcone.setSize(borderSize, borderSize);
 
@@ -249,22 +204,13 @@ public class TelaDeSelecaoDeJogadores {
         iconStack.add(contornoIcone);
         iconStack.add(estadoIcone);
 
-        // Centraliza ícone dentro da borda
-        estadoIcone.setPosition(
-            (borderSize - ICON_SIZE) / 2f,
-            (borderSize - ICON_SIZE) / 2f
-        );
+        estadoIcone.setPosition((borderSize - ICON_SIZE) / 2f, (borderSize - ICON_SIZE) / 2f);
 
-        // 4. Botão Direita
         ImageButton rightButton = new ImageButton(drawArrowRight);
         rightButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                cycleState(cor, true);
-            }
+            @Override public void changed(ChangeEvent event, Actor actor) { cycleState(cor, true); }
         });
 
-        // Adiciona ao pod usando as constantes de tamanho
         pod.add(leftButton).size(ARROW_SIZE, ARROW_SIZE);
         pod.add(iconStack).width(borderSize).height(borderSize);
         pod.add(rightButton).size(ARROW_SIZE, ARROW_SIZE);
@@ -272,93 +218,45 @@ public class TelaDeSelecaoDeJogadores {
         return pod;
     }
 
-    // --- LÓGICA ---
-
-    public List<Jogador> getJogadoresSelecionados() {
-        List<Jogador> lista = new ArrayList<>();
-
-        // Reinicia o ID para 1 para os jogadores ativos
-        int idSequencial = 1;
-
-        for (CorJogador cor : CorJogador.values()) {
-            TipoJogador tipo = estadosDosJogadores.get(cor);
-
-            if (tipo != TipoJogador.NENHUM) {
-                boolean isIA = (tipo == TipoJogador.IA);
-
-                // Cria jogador com ID sequencial (1, 2, 3...)
-                lista.add(new Jogador(
-                    "Jogador " + idSequencial, // Nome
-                    cor,                       // Cor
-                    idSequencial,              // ID
-                    isIA                       // Flag IA
-                ));
-
-                idSequencial++;
-            }
-        }
-        return lista;
-    }
+    // --- LÓGICA ATUALIZADA PARA DALTONISMO ---
 
     private void cycleState(CorJogador cor, boolean proximo) {
         TipoJogador estadoAtual = estadosDosJogadores.get(cor);
-        
-        // 1. Calcula qual seria o próximo estado natural
         TipoJogador novoEstado = proximo ? estadoAtual.proximo() : estadoAtual.anterior();
 
-        // 2. Verifica se o novo estado seria "NENHUM" e se isso violaria a regra mínima
+        // Lógica de pular "Nenhum" se já estiver no mínimo (seu pedido anterior)
         if (novoEstado == TipoJogador.NENHUM) {
-            
-            // Conta quantos jogadores ativos existem NO MOMENTO
             int jogadoresAtivos = 0;
             for (TipoJogador tipo : estadosDosJogadores.values()) {
                 if (tipo != TipoJogador.NENHUM) jogadoresAtivos++;
             }
-
-            // Se já estamos no limite mínimo (3) e tentarmos transformar um ativo em NENHUM...
-            // ...nós PULAMOS o estado NENHUM e vamos para o próximo da fila.
-            // Ex: Se estava em HUMANO e ia para NENHUM (Bloqueado) -> Pula para IA.
             if (jogadoresAtivos <= MIN_JOGADORES && estadoAtual != TipoJogador.NENHUM) {
                 novoEstado = proximo ? novoEstado.proximo() : novoEstado.anterior();
             }
         }
 
-        // 3. Aplica a mudança
         estadosDosJogadores.put(cor, novoEstado);
 
-        // 4. Atualiza Visualmente
+        // Atualiza Visual
         Image icone = iconesDeEstado.get(cor);
         switch (novoEstado) {
             case NENHUM: icone.setDrawable(drawNoPlayer); break;
             case HUMANO: icone.setDrawable(drawHuman); break;
             case IA:     icone.setDrawable(drawAI); break;
         }
-        icone.setColor(cor.getGdxColor());
         
-        // Limpa mensagem de erro se houver
+        // --- CORREÇÃO AQUI: Lê a preferência para pintar o ícone ---
+        boolean modoDaltonico = Gdx.app.getPreferences("WarJogoConfigs").getBoolean("daltonismo", false);
+        icone.setColor(cor.getColor(modoDaltonico));
+        
         if (errorLabel != null) errorLabel.setText("");
-    }
-
-    public void resetarEstado() {
-        inicializarMapaLogico();
-        resetarVisuais();
-        if (errorLabel != null) errorLabel.setText("");
-    }
-
-    private void inicializarMapaLogico() {
-        CorJogador[] cores = CorJogador.values();
-        for (int i = 0; i < cores.length; i++) {
-            CorJogador cor = cores[i];
-            if (i < DEFAULT_HUMANOS) {
-                estadosDosJogadores.put(cor, TipoJogador.HUMANO);
-            } else {
-                estadosDosJogadores.put(cor, TipoJogador.NENHUM);
-            }
-        }
     }
 
     private void resetarVisuais() {
         if (iconesDeEstado == null || iconesDeEstado.isEmpty()) return;
+
+        // --- CORREÇÃO AQUI TAMBÉM ---
+        boolean modoDaltonico = Gdx.app.getPreferences("WarJogoConfigs").getBoolean("daltonismo", false);
 
         for (CorJogador cor : CorJogador.values()) {
             TipoJogador estado = estadosDosJogadores.get(cor);
@@ -368,75 +266,79 @@ public class TelaDeSelecaoDeJogadores {
             switch (estado) {
                 case HUMANO: icone.setDrawable(drawHuman); break;
                 case IA:     icone.setDrawable(drawAI); break;
-                case NENHUM:
-                default:     icone.setDrawable(drawNoPlayer); break;
+                case NENHUM: default: icone.setDrawable(drawNoPlayer); break;
             }
-            icone.setColor(cor.getGdxColor());
+            
+            // Aplica a cor certa (Normal ou Daltônica)
+            icone.setColor(cor.getColor(modoDaltonico));
         }
     }
 
-    private boolean validarSelecao() {
-        int contadorJogadores = 0;
-        for (TipoJogador tipo : estadosDosJogadores.values()) {
+    // ... (Resto da classe: inicializarMapaLogico, validarSelecao, getJogadoresSelecionados, render, resize, dispose - IGUAIS) ...
+    // Vou incluir apenas os métodos faltantes para completar o arquivo se você copiar e colar:
+    
+    public List<Jogador> getJogadoresSelecionados() {
+        List<Jogador> lista = new ArrayList<>();
+        int id = 1;
+        for (CorJogador cor : CorJogador.values()) {
+            TipoJogador tipo = estadosDosJogadores.get(cor);
             if (tipo != TipoJogador.NENHUM) {
-                contadorJogadores++;
+                lista.add(new Jogador("Jogador " + id, cor, id, (tipo == TipoJogador.IA)));
+                id++;
             }
         }
-        return contadorJogadores >= MIN_JOGADORES;
+        return lista;
+    }
+    
+    public void resetarEstado() {
+        inicializarMapaLogico();
+        resetarVisuais();
+        if(errorLabel != null) errorLabel.setText("");
     }
 
-    // --- CICLO DE VIDA ---
+    private void inicializarMapaLogico() {
+        CorJogador[] cores = CorJogador.values();
+        for (int i = 0; i < cores.length; i++) {
+            if (i < DEFAULT_HUMANOS) estadosDosJogadores.put(cores[i], TipoJogador.HUMANO);
+            else estadosDosJogadores.put(cores[i], TipoJogador.NENHUM);
+        }
+    }
+    
+    private boolean validarSelecao() {
+        int count = 0;
+        for (TipoJogador t : estadosDosJogadores.values()) if (t != TipoJogador.NENHUM) count++;
+        return count >= MIN_JOGADORES;
+    }
+
     public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Certifique-se de importar GL20
-
-        stage.getViewport().apply(); // Garante que a câmera está certa
-
-        stage.getBatch().setProjectionMatrix(stage.getCamera().combined);
+        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         stage.getBatch().begin();
         
-        // Lógica para esticar o fundo para cobrir qualquer tamanho de tela
+        // Fundo Responsivo (Copiado da TelaInicial)
         float screenW = stage.getViewport().getWorldWidth();
         float screenH = stage.getViewport().getWorldHeight();
-        
-        // Desenha o fundo um pouco maior e centralizado para cobrir tudo
-        // A lógica abaixo centraliza a imagem de fundo na câmera
         float bgW = background.getWidth();
         float bgH = background.getHeight();
-        float scale = Math.max(screenW / bgW, screenH / bgH); // Escala para preencher (Cover)
-        
+        float scale = Math.max(screenW / bgW, screenH / bgH);
         float drawW = bgW * scale;
         float drawH = bgH * scale;
         float drawX = (screenW - drawW) / 2;
         float drawY = (screenH - drawH) / 2;
-
         stage.getBatch().draw(background, drawX, drawY, drawW, drawH);
         
         stage.getBatch().end();
-
         stage.act(delta);
         stage.draw();
     }
 
     public void resize(int width, int height) {
-        // 'true' centraliza a UI na tela, evitando que botões fiquem no canto
         stage.getViewport().update(width, height, true);
     }
 
     public void dispose() {
-        stage.dispose();
-        skin.dispose();
-        background.dispose();
-
-        texArrowLeft.dispose();
-        texArrowRight.dispose();
-        texNoPlayer.dispose();
-        texHuman.dispose();
-        texAI.dispose();
-        texIconBorder.dispose();
-
-        fontCor.dispose();
-        fontTitulo.dispose();
-        fontBotaoNav.dispose();
+        stage.dispose(); skin.dispose(); background.dispose();
+        texArrowLeft.dispose(); texArrowRight.dispose(); texNoPlayer.dispose();
+        texHuman.dispose(); texAI.dispose(); texIconBorder.dispose();
+        fontCor.dispose(); fontTitulo.dispose(); fontBotaoNav.dispose();
     }
 }

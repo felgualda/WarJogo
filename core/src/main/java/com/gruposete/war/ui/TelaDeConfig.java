@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.gruposete.war.core.GerenciadorAudio;
 
 public class TelaDeConfig {
 
@@ -73,13 +74,41 @@ public class TelaDeConfig {
         Label.LabelStyle textoStyle = new Label.LabelStyle(fontTexto, skin.getColor("white"));
         root.add(new Label("Volume", textoStyle)).padBottom(10).row();
 
-        Slider sliderVolume = new Slider(0f, 1f, 0.01f, false, skin);
-        sliderVolume.setValue(0.5f);
+        float volInicial = GerenciadorAudio.getInstance().getVolume();
+
+        Slider sliderVolume = new Slider(0f, 0.1f, 0.001f, false, skin);
+        sliderVolume.setValue(volInicial);
+        root.add(sliderVolume).width(SLIDER_W).padBottom(40).row();
+
+        sliderVolume.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float novoVol = sliderVolume.getValue();
+                GerenciadorAudio.getInstance().setVolume(novoVol);
+            }
+        });
+
         root.add(sliderVolume).width(SLIDER_W).padBottom(40).row();
 
         // --- Daltonismo ---
-        CheckBox checkDaltonismo = new CheckBox("   Modo Daltonismo", skin);
+
+        final CheckBox checkDaltonismo = new CheckBox("   Modo Daltonismo", skin);
         checkDaltonismo.getLabel().setFontScale(FONT_SCALE_TEXTO);
+        
+        // 1. Carrega o estado salvo (Padrão: false)
+        boolean isDaltonico = Gdx.app.getPreferences("WarJogoConfigs").getBoolean("daltonismo", false);
+        checkDaltonismo.setChecked(isDaltonico);
+
+        // 2. Salva quando clicar
+        checkDaltonismo.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                boolean ativado = checkDaltonismo.isChecked();
+                Gdx.app.getPreferences("WarJogoConfigs").putBoolean("daltonismo", ativado);
+                Gdx.app.getPreferences("WarJogoConfigs").flush(); // Salva no disco
+            }
+        });
+
         // Ajuste fino na célula da tabela para centralizar visualmente
         root.add(checkDaltonismo).padBottom(100).row();
 
