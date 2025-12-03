@@ -162,7 +162,7 @@ public class IABot {
         }
     }
 
-    private Territorio getMelhorTerritorioDefesaNovaFormula(String filtroContinente) {
+    protected Territorio getMelhorTerritorioDefesaNovaFormula(String filtroContinente) {
         Territorio melhor = null;
         float maiorScore = -1f;
 
@@ -190,7 +190,7 @@ public class IABot {
         return melhor;
     }
 
-    private Territorio getMelhorTerritorioAtaqueAllIn(int tropasReserva) {
+    protected Territorio getMelhorTerritorioAtaqueAllIn(int tropasReserva) {
         Territorio melhor = null;
         float maiorScore = -1f;
 
