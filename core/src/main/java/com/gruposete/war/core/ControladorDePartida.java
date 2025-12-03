@@ -144,6 +144,10 @@ public class ControladorDePartida {
         }
     }
 
+    public void descartarReforcosRestantes() {
+        this.filaDeReforcos.clear(); // Esvazia a fila, zerando as tropas a distribuir
+    }
+
     /**
      * Avança para a próxima fase dentro do turno de um jogador.
      */

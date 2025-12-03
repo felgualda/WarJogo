@@ -88,6 +88,7 @@ public class IABot {
             safetyCounter++;
             if (safetyCounter > 300) {
                 Gdx.app.log("IA", "ALERTA: Loop de distribuição travou. Forçando saída.");
+                controlador.descartarReforcosRestantes();
                 break;
             }
 
