@@ -1,42 +1,95 @@
-# WarJogo
+# ⚔️ WarJogo - Grupo 7 (Engenharia de Software II)
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+Um projeto de implementação do jogo **War** utilizando **Java** e o framework **libGDX**. Este projeto foi gerado com [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
 
-This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws a simple GUI on the screen.
+---
 
-## Platforms
+## 🚀 Como Executar (Entrega Final)
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+O jogo foi compilado para rodar nativamente nos três principais sistemas operacionais (sem necessidade de instalação prévia do Java), além de uma versão universal.
 
-## Gradle
+### 📂 Estrutura da Entrega
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
+A entrega está organizada na pasta `Jogo_War_Grupo7` da seguinte forma:
 
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
+* **`/` (Raiz):** Contém o arquivo `WarJogo.jar` (Versão Universal Leve).
+* **`/Windows`:** Contém a versão executável (`.exe`) com Java embutido para Windows.
+* **`/Linux`:** Contém o executável nativo para distribuições Linux.
+* **`/MAC`:** Contém os aplicativos (`.app`) para macOS (Intel e Apple Silicon).
 
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+---
 
-## Testes Unitários
+### Instruções de Execução por Sistema Operacional
 
-Este projeto inclui testes unitários com **JUnit 5** e **AssertJ**.
+#### 1. Windows (Recomendado)
 
-### Executar Testes
+Esta versão já inclui o Java necessário embutido na pasta.
+
+1.  Abra a pasta **`Windows`**.
+2.  Localize o arquivo **`WarJogo.exe`** (pode aparecer apenas como `WarJogo`).
+3.  Dê um **clique duplo** para iniciar.
+
+#### 2. Linux
+
+1.  Abra a pasta **`Linux`**.
+2.  Localize o arquivo executável (geralmente sem extensão ou `.x86_64`).
+3.  Dê um **clique duplo** ou execute via terminal:
+
+    ```bash
+    ./WarJogo
+    ```
+    > **Nota:** Se o arquivo não abrir, garanta que ele tem **permissão de execução**: *Botão direito -> Propriedades -> Permissões -> "Permitir executar como programa"*.
+
+#### 3. macOS
+
+Na pasta `MAC`, você encontrará duas subpastas. Escolha a correta para o seu processador:
+
+* **`macX64`**: Para Macs com processador **Intel** (modelos mais antigos).
+* **`macM1` (ou `macArm64`)**: Para Macs com processador **Apple Silicon** (M1, M2, M3...).
+
+> **Nota sobre Segurança (Gatekeeper):** O macOS pode bloquear a abertura inicial. Para contornar:
+>
+> 1.  Clique com o **Botão Direito** (ou `Control` + Clique) no ícone do aplicativo `WarJogo.app`.
+> 2.  Selecione **"Abrir"** no menu.
+> 3.  Na janela de aviso, confirme clicando em **"Abrir"**.
+
+#### 4. Versão Universal (`.JAR`)
+
+Requer **Java 17+** instalado.
+
+1.  Na pasta raiz, localize o arquivo **`WarJogo.jar`**.
+2.  Dê um **clique duplo** ou abra via terminal:
+
+    ```bash
+    java -jar WarJogo.jar
+    ```
+
+---
+
+## 🛠️ Documentação Técnica (Desenvolvimento)
+
+### Plataformas do Projeto
+
+* **`core`**: Módulo principal com a **lógica da aplicação** compartilhada por todas as plataformas.
+* **`lwjgl3`**: Plataforma desktop primária usando LWJGL3.
+
+### Gradle & Comandos Úteis
+
+Este projeto usa **Gradle** para gerenciar dependências. O *wrapper* do Gradle foi incluído.
+
+| Comando | Descrição |
+| :--- | :--- |
+| `build` | Compila fontes e gera arquivos de todos os projetos. |
+| `clean` | Remove pastas `build` (limpeza). |
+| `lwjgl3:jar` | Gera o JAR executável em `lwjgl3/build/libs`. |
+| `lwjgl3:run` | Inicia a aplicação em **modo de desenvolvimento**. |
+| `test` | Roda os testes unitários. |
+
+### Testes Unitários
+
+Este projeto inclui testes unitários automatizados com **JUnit 5** e **AssertJ** para validar as regras de negócio.
+
+#### Como Executar os Testes
 
 ```bash
 # Rodar todos os testes do módulo core
@@ -45,42 +98,38 @@ Este projeto inclui testes unitários com **JUnit 5** e **AssertJ**.
 # Ou no Windows
 .\gradlew.bat :core:test
 
-# Rodar os testes com output formatado (test-logger)
-./gradlew :core:test
-```
+### Cobertura de Testes
 
-### Estrutura de Testes
+Os testes cobrem as principais lógicas do jogo, localizados em `core/src/test/java/com/gruposete/war/core/`:
 
-- `core/src/test/java/com/gruposete/war/core/JogadorTest.java` - Testes de gerenciamento de jogadores
-- `core/src/test/java/com/gruposete/war/core/CartaTest.java` - Testes de cartas
-- `core/src/test/java/com/gruposete/war/core/VerificadorObjetivosTest.java` - Testes de verificação de objetivos
-- `core/src/test/java/com/gruposete/war/core/ControladorDePartidaTest.java` - Testes do controlador de partida
+* **`AtaqueLogicaTest.java`**: Valida regras de combate (ex: mín. 2 tropas para atacar) e conquista de territórios.
+* **`IABotTest.java`**: Valida as heurísticas de inteligência artificial (eficácia de ataque e refinamento de defesa).
+* **`JogadorTest.java`**: Testes de gerenciamento de saldo de exércitos e posse.
+* **`CartaTest.java`**: Testes de estrutura de cartas.
+* **`VerificadorObjetivosTest.java`**: Valida condições de vitória (territórios, continentes, destruição).
+* **`ControladorDePartidaTest.java`**: Testes de fluxo de turno, alocação e troca de cartas.
 
-### Status dos Testes
+#### Status Atual
+✅ Todos os testes passando.
 
-✅ **12/12 Testes Passando**
-- 3 testes em JogadorTest
-- 1 teste em CartaTest
-- 4 testes em VerificadorObjetivosTest
-- 4 testes em ControladorDePartidaTest
+---
 
-### CI/CD com GitHub Actions
+## 🔁 CI/CD com GitHub Actions
 
-Este projeto utiliza **GitHub Actions** para executar testes automaticamente em:
-- Windows
-- macOS
-- Ubuntu
+Este projeto utiliza **GitHub Actions** para garantir a qualidade do código a cada alteração. O *workflow* (`.github/workflows/build-and-test.yml`) executa automaticamente:
 
-Com Java 17
+* Setup do ambiente Java (JDK 17 e 21).
+* Compilação do projeto.
+* Execução de todos os testes unitários.
 
-O workflow está configurado em `.github/workflows/build-and-test.yml` e roda a cada push.
+A validação ocorre em **3 sistemas operacionais simultaneamente**:
 
-### Relatório de Testes
+* `Windows-latest`
+* `macOS-latest`
+* `Ubuntu-latest`
 
-Após rodar os testes, você pode visualizar um relatório HTML:
-```bash
-./gradlew :core:test
-```
+### Relatório de Testes (HTML)
 
-O relatório estará em: `core/build/reports/tests/test/index.html`
+Após rodar os testes localmente, um relatório detalhado pode ser encontrado em:
 
+`core/build/reports/tests/test/index.html`
