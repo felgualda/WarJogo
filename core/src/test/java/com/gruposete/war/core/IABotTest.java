@@ -31,38 +31,46 @@ class IABotTest {
         jogadores.add(jogadorIA);
         jogadores.add(jogadorHumano);
 
-        // 1. Inicializa o Controlador normalmente
-        // Isso chama o SetupPartida, que usa o Utils para criar o Mapa completo.
-        // Assim garantimos que não haverá NullPointerException.
         controlador = new ControladorDePartida(jogadores);
         controlador.iniciarPartida(); 
         
-        // 2. Recupera as referências reais dos territórios de dentro do controlador
         Array<Territorio> todos = controlador.getTerritorios();
-        for(Territorio t : todos) {
+        
+        // --- CORREÇÃO: LIMPEZA DO MAPA ---
+        // 1. Dá TODOS os territórios para a IA e blinda com 100 tropas.
+        // Isso evita que vizinhos aleatórios (como Venezuela) virem alvos fáceis acidentais.
+        jogadorIA.getTerritorios().clear();
+        jogadorHumano.getTerritorios().clear();
+        
+        for (Territorio t : todos) {
+            t.setPlayerId(jogadorIA.getPlayerId());
+            t.setTropas(100); // Ninguém vai querer atacar isso
+            jogadorIA.adicionarTerritorio(t);
+            
+            // Guarda referências importantes
             if(t.getNome().equals("Brasil")) tForteIA = t;
             if(t.getNome().equals("Argentina")) tFracoInimigo = t;
             if(t.getNome().equals("Peru")) tForteInimigo = t;
         }
 
-        // 3. Limpa a distribuição aleatória para montarmos nosso cenário
-        for (Jogador j : jogadores) {
-            j.getTerritorios().clear();
-        }
+        // 2. Agora configura APENAS o cenário do teste (sobrescrevendo o acima)
         
-        // 4. Configura posse para o teste:
-        // IA fica com o Brasil
-        tForteIA.setPlayerId(jogadorIA.getPlayerId());
-        jogadorIA.adicionarTerritorio(tForteIA);
+        // Brasil (IA) - Normal
+        tForteIA.setTropas(10); 
+        // (Já é da IA pelo loop acima)
         
-        // Humano fica com Argentina e Peru
+        // Argentina (Inimigo) - FRACO (Alvo desejado)
         tFracoInimigo.setPlayerId(jogadorHumano.getPlayerId());
-        jogadorHumano.adicionarTerritorio(tFracoInimigo);
+        tFracoInimigo.setTropas(1);
+        jogadorIA.removerTerritorio(tFracoInimigo); // Tira da IA
+        jogadorHumano.adicionarTerritorio(tFracoInimigo); // Dá pro Humano
         
+        // Peru (Inimigo) - FORTE
         tForteInimigo.setPlayerId(jogadorHumano.getPlayerId());
+        tForteInimigo.setTropas(20);
+        jogadorIA.removerTerritorio(tForteInimigo);
         jogadorHumano.adicionarTerritorio(tForteInimigo);
 
-        // Inicializa o Bot
         bot = new IABot(controlador, jogadorIA);
     }
 

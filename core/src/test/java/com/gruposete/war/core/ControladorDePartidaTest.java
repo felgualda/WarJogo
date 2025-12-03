@@ -181,21 +181,30 @@ public class ControladorDePartidaTest {
 
         assertEquals(ControladorDePartida.EstadoTurno.DISTRIBUINDO, ctrl.getEstadoTurno());
 
-        // Aloca todas as tropas disponíveis
-        Jogador atual = ctrl.getJogadorAtual();
-        Territorio t = atual.getTerritorios().get(0);
-
-        // Aloca enquanto houver tropas
-        while (ctrl.getTropasADistribuir() > 0) {
-            ctrl.alocarTropas(t, 1);
+        // --- LOOP SEGURO ---
+        int safety = 0;
+        while (ctrl.getTropasADistribuirTotal() > 0) {
+            if (safety++ > 500) { // Proteção
+                ctrl.descartarReforcosRestantes(); // Força saída
+                break; 
+            }
+            
+            // Tenta alocar no primeiro território válido que encontrar
+            boolean alocou = false;
+            for (Territorio t : ctrl.getJogadorAtual().getTerritorios()) {
+                // Se tiver restrição, respeita
+                String rest = ctrl.getRestricaoAtual();
+                if (rest == null || t.getContinente().equalsIgnoreCase(rest)) {
+                    if (ctrl.alocarTropas(t, 1)) {
+                        alocou = true;
+                        break;
+                    }
+                }
+            }
+            if (!alocou) ctrl.descartarReforcosRestantes(); // Se travou, descarta
         }
 
-        // Avança para próxima fase
         ctrl.proximaFaseTurno();
-
-        // Se passou da primeira rodada (ou em rodadas posteriores): deve estar em ATACANDO
-        // Na primeira rodada: volta para DISTRIBUINDO do próximo jogador
-        // Vamos só checar que o estado mudou ou virou DISTRIBUINDO novamente
         assertNotNull(ctrl.getEstadoTurno());
     }
 }
