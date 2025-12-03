@@ -2,6 +2,7 @@ package com.gruposete.war;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
 import com.gruposete.war.core.*;
 import com.gruposete.war.ui.*;
 
@@ -20,7 +21,6 @@ public class Main extends ApplicationAdapter {
     private TelaDeConfig telaDeConfig;
     private TelaVitoria telaVitoria;
 
-
     private enum TelaAtiva { INICIAL, SELECAO, JOGO, REGRAS, CONFIG, VITORIA }
     private TelaAtiva telaAtual;
 
@@ -31,21 +31,22 @@ public class Main extends ApplicationAdapter {
         // pois depende dos dados do setup.
 
         // --- Lógica de setup movida para os callbacks da TelaDeSelecao ---
+        GerenciadorAudio.getInstance().inicializar();
 
         // 1. Criamos os callbacks para a nova TelaDeSelecao.
         // O 'iniciarJogoCallback' contém a lógica de setup que antes estava no 'jogarCallback' da TelaInicial.
         Runnable iniciarJogoCallback = () -> {
             // Main.java -> iniciarJogoCallback (CORRIGIDO)
-// 1. Pega os jogadores
+            // 1. Pega os jogadores
             List<Jogador> jogadores = telaDeSelecao.getJogadoresSelecionados();
 
-// 2. Cria o Controlador (Tarefa #26)
+            // 2. Cria o Controlador (Tarefa #26)
             ControladorDePartida controlador = new ControladorDePartida(jogadores);
 
-// 3. Manda o controlador se preparar (Tarefas #22, #23, #24)
+            // 3. Manda o controlador se preparar (Tarefas #22, #23, #24)
             controlador.iniciarPartida();
 
-// 4. Cria o callback de voltar (sem mudança)
+            // 4. Cria o callback de voltar (sem mudança)
             Runnable voltarCallback = () -> {
                 telaAtual = TelaAtiva.INICIAL;
                 Gdx.input.setInputProcessor(telaInicial.stage);
@@ -84,7 +85,7 @@ public class Main extends ApplicationAdapter {
             Gdx.input.setInputProcessor(telaDeJogo.getMultiplexer());
         };
 
-
+        GerenciadorAudio.getInstance().inicializar();
 
         // Callback para a TelaDeSelecao Voltar para a Inicial
         Runnable voltarParaInicialCallback = () -> {
@@ -122,7 +123,6 @@ public class Main extends ApplicationAdapter {
             telaAtual = TelaAtiva.INICIAL;
             Gdx.input.setInputProcessor(telaInicial.stage);
         });
-
 
         telaAtual = TelaAtiva.INICIAL;
         Gdx.input.setInputProcessor(telaInicial.stage);
@@ -176,10 +176,9 @@ public class Main extends ApplicationAdapter {
     @Override
     public void dispose() {
         telaInicial.dispose();
-        // --- MUDANÇA AQUI ---
         // Adicionado o dispose para a tela de seleção (com checagem de null)
         if (telaDeSelecao != null) telaDeSelecao.dispose();
-        // --- FIM DA MUDANÇA ---
+        GerenciadorAudio.getInstance().dispose();
         // Adicionada checagem para evitar crash
         if (telaDeJogo != null) telaDeJogo.dispose();
         telaDeRegras.dispose();
