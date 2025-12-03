@@ -21,7 +21,7 @@ A entrega está organizada na pasta `Jogo_War_Grupo7` da seguinte forma:
 
 ### Instruções de Execução por Sistema Operacional
 
-#### 1. Windows (Recomendado)
+#### 1. Windows (Recomendado) - https://drive.google.com/drive/folders/12R2fg5o_6ycnnVwxyXl1VrKrq0JLCg5g?usp=sharing
 
 Esta versão já inclui o Java necessário embutido na pasta.
 
@@ -29,7 +29,7 @@ Esta versão já inclui o Java necessário embutido na pasta.
 2.  Localize o arquivo **`WarJogo.exe`** (pode aparecer apenas como `WarJogo`).
 3.  Dê um **clique duplo** para iniciar.
 
-#### 2. Linux
+#### 2. Linux - https://drive.google.com/drive/folders/12R2fg5o_6ycnnVwxyXl1VrKrq0JLCg5g?usp=drive_link
 
 1.  Abra a pasta **`Linux`**.
 2.  Localize o arquivo executável (geralmente sem extensão ou `.x86_64`).
@@ -40,7 +40,7 @@ Esta versão já inclui o Java necessário embutido na pasta.
     ```
     > **Nota:** Se o arquivo não abrir, garanta que ele tem **permissão de execução**: *Botão direito -> Propriedades -> Permissões -> "Permitir executar como programa"*.
 
-#### 3. macOS
+#### 3. macOS - https://drive.google.com/drive/folders/12R2fg5o_6ycnnVwxyXl1VrKrq0JLCg5g?usp=drive_link
 
 Na pasta `MAC`, você encontrará duas subpastas. Escolha a correta para o seu processador:
 
@@ -53,7 +53,7 @@ Na pasta `MAC`, você encontrará duas subpastas. Escolha a correta para o seu p
 > 2.  Selecione **"Abrir"** no menu.
 > 3.  Na janela de aviso, confirme clicando em **"Abrir"**.
 
-#### 4. Versão Universal (`.JAR`)
+#### 4. Versão Universal (`.JAR`) - https://drive.google.com/file/d/1jv84HC_b7lKWARywIcNrwe1hg2Dl4d6g/view?usp=sharing
 
 Requer **Java 17+** instalado.
 
